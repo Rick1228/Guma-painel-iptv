@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guma - Painel de Administração de Clientes & TV</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Vanilla CSS -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header" style="padding: 10px 14px; min-height: 115px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+        <div class="logo-container" style="display: flex; align-items: center; justify-content: center; width: 100%;">
+          <img src="logo-Guma.png" alt="Guma TV" style="width: 250px; height: 115px; object-fit: contain; transform: scale(1.65); filter: drop-shadow(0 6px 18px rgba(56, 189, 248, 0.45));">
+        </div>
+        <button class="mobile-menu-toggle" id="closeSidebarBtn" style="display: none; position: absolute; right: 12px; top: 12px; z-index: 10;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item active" data-tab="dashboard">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Visão Geral</span>
+          </div>
+        </a>
+
+        <div class="nav-section-title">Gestão de Clientes</div>
+        <a class="nav-item" data-tab="users-list">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-users"></i>
+            <span>Meus Usuários</span>
+          </div>
+          <span class="nav-badge" id="badge-users-count">0</span>
+        </a>
+        <a class="nav-item" data-tab="create-user">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Criar Usuário</span>
+          </div>
+        </a>
+        <a class="nav-item" data-tab="tests-list">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Meus Testes</span>
+          </div>
+          <span class="nav-badge" id="badge-tests-count">0</span>
+        </a>
+
+        <div class="nav-section-title">Financeiro & API Guma</div>
+        <a class="nav-item" data-tab="wpay-config">
+          <div class="nav-item-content">
+            <i class="fa-solid fa-plug-circle-check"></i>
+            <span>API Guma & Gateways</span>
+          </div>
+          <span class="nav-badge" style="background: var(--accent-emerald); color: #fff;" id="api-status-badge">CONECTADO</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar" style="background: var(--accent-emerald);">G</div>
+        <div class="user-info">
+          <div class="user-name">GumaTVx</div>
+          <div class="user-meta">ID: 22780 | Crs: <span class="credit-highlight" id="footer-credits">8,00</span></div>
+        </div>
+        <button class="action-btn" title="Configurações e Token API" onclick="document.querySelector('[data-tab=\'wpay-config\']').click()">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <main class="main-wrapper">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="openSidebarBtn">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="header-title" id="current-page-title">Visão Geral</h1>
+        </div>
+
+        <div class="header-right">
+          <div class="credit-pill" title="Créditos e Sincronização API Guma">
+            <i class="fa-solid fa-coins"></i>
+            <span>Créditos: <strong id="header-credits">8,00</strong></span>
+          </div>
+
+          <button class="header-btn" id="btn-quick-test">
+            <i class="fa-solid fa-bolt text-accent"></i>
+            <span>Gerar Teste Rápido</span>
+          </button>
+
+          <button class="header-btn" id="btn-refresh-data" title="Sincronizar dados ao vivo com a API Guma / WPlay">
+            <i class="fa-solid fa-rotate text-emerald"></i>
+            <span>Sincronizar API</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content-area">
+
+        <!-- =========================================================
+             TAB 1: DASHBOARD / VISÃO GERAL
+             ========================================================= -->
+        <section class="tab-section active" id="tab-dashboard">
+          
+          <!-- KPI Cards Grid -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Créditos Disponíveis</div>
+                <div class="kpi-value" id="kpi-credits">8,00</div>
+                <div class="kpi-sub"><i class="fa-solid fa-check-circle"></i> Válidos na API mcapi.knewcms.com</div>
+              </div>
+              <div class="kpi-icon icon-emerald"><i class="fa-solid fa-sack-dollar"></i></div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Usuários Ativos</div>
+                <div class="kpi-value" id="kpi-active-users">4</div>
+                <div class="kpi-sub"><i class="fa-solid fa-arrow-trend-up"></i> Sincronizado ao vivo</div>
+              </div>
+              <div class="kpi-icon icon-purple"><i class="fa-solid fa-users"></i></div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Testes Gerados</div>
+                <div class="kpi-value" id="kpi-total-tests">41</div>
+                <div class="kpi-sub" style="color: var(--accent-cyan);"><i class="fa-solid fa-clock"></i> 3 ativos no momento</div>
+              </div>
+              <div class="kpi-icon icon-cyan"><i class="fa-solid fa-stopwatch"></i></div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Taxa de Conversão</div>
+                <div class="kpi-value">4,88%</div>
+                <div class="kpi-sub" style="color: var(--accent-amber);"><i class="fa-solid fa-chart-line"></i> Testes p/ Pagantes</div>
+              </div>
+              <div class="kpi-icon icon-amber"><i class="fa-solid fa-percent"></i></div>
+            </div>
+          </div>
+
+          <div class="dashboard-row">
+            <!-- Left: Quick Test Generator -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title"><i class="fa-solid fa-bolt" style="color: var(--accent-pink);"></i> Gerador Rápido de Teste (API WPlay)</h2>
+                  <p class="panel-subtitle">Crie credenciais temporárias instantâneas e envie direto no WhatsApp do cliente</p>
+                </div>
+              </div>
+
+              <form id="quick-test-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Selecione o Pacote / Servidor</label>
+                    <select class="form-select" id="qt-plan">
+                      <option value="Ultra 1 Krator+ (IPTV)">Ultra 1 Krator+ (IPTV)</option>
+                      <option value="Ultra Light (P2P)">Ultra Light (P2P)</option>
+                      <option value="Servidor Completo FHD/4K">Servidor Completo FHD/4K</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Período de Duração</label>
+                    <select class="form-select" id="qt-duration">
+                      <option value="3 Horas">3 Horas (Padrão)</option>
+                      <option value="6 Horas">6 Horas (Estendido)</option>
+                      <option value="24 Horas">24 Horas (Especial)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">WhatsApp para Envio (Opcional)</label>
+                    <input type="text" class="form-input" id="qt-whatsapp" placeholder="+55 11 99999-9999">
+                  </div>
+                  <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar via WPlay API
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- Quick Test Result Box (Hidden by default) -->
+              <div id="qt-result-box" style="display: none; margin-top: 20px; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-emerald); border-radius: var(--radius-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-weight: 700; color: var(--accent-emerald);"><i class="fa-solid fa-check"></i> Teste Criado com Sucesso!</span>
+                  <div class="action-group">
+                    <button class="btn btn-secondary btn-sm" id="btn-copy-qt"><i class="fa-regular fa-copy"></i> Copiar Tudo</button>
+                    <button class="btn btn-emerald btn-sm" id="btn-whatsapp-qt"><i class="fa-brands fa-whatsapp"></i> Enviar no WhatsApp</button>
+                  </div>
+                </div>
+                <div class="mono-text" style="width: 100%; padding: 12px; line-height: 1.6;" id="qt-credentials-display">
+                  Usuário: test_abc123<br>Senha: 987654<br>Validade: 3 Horas<br>Link: https://wwpanel.link/app
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: WPay Quick Checkout Status -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title"><i class="fa-solid fa-credit-card" style="color: var(--accent-cyan);"></i> WPay Automático & API</h2>
+                  <p class="panel-subtitle">Status de conexão e cobrança em tempo real</p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-weight: 600;">API WPlay / mcapi.knewcms.com</div>
+                    <div style="font-size: 0.82rem; color: var(--accent-emerald);" id="api-bridge-status-text"><i class="fa-solid fa-circle-check"></i> Token Conectado (wz_d5dc...)</div>
+                  </div>
+                  <span class="badge badge-active">Ativo</span>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-weight: 600;">Envio de Cobrança Automática</div>
+                    <div style="font-size: 0.82rem; color: var(--text-secondary);">Avise 3 dias antes do vencimento via WhatsApp</div>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" checked id="toggle-auto-charge">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                  <div>
+                    <div style="font-weight: 600;">Renovações Pendentes</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">1 cliente próximo do vencimento</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=\'users-list\']').click()">Ver Lista</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- =========================================================
+             TAB 2: MEUS USUÁRIOS (GERENCIAMENTO DE CLIENTES)
+             ========================================================= -->
+        <section class="tab-section" id="tab-users-list">
+          <div class="card-panel">
+            
+            <div class="table-toolbar">
+              <div class="search-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="form-input" id="search-users" placeholder="Buscar por Nome, ID, Usuário ou WhatsApp...">
+              </div>
+
+              <div class="filter-group">
+                <select class="form-select" id="filter-status" style="width: 170px;">
+                  <option value="ALL">Todos os Status</option>
+                  <option value="Ativo">Ativos</option>
+                  <option value="Expirado">Expirados</option>
+                </select>
+                
+                <button class="btn btn-primary" id="btn-go-to-create">
+                  <i class="fa-solid fa-user-plus"></i> Novo Cliente
+                </button>
+              </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-responsive">
+              <table class="custom-table" id="users-table">
+                <thead>
+                  <tr>
+                    <th>ID / Cliente</th>
+                    <th>Credenciais WPlay</th>
+                    <th>Plano e Pacote</th>
+                    <th>Vencimento / Prazo</th>
+                    <th>WhatsApp & Contato</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações & WPay</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- =========================================================
+             TAB 3: CRIAR NOVO USUÁRIO
+             ========================================================= -->
+        <section class="tab-section" id="tab-create-user">
+          <div class="card-panel" style="max-width: 780px; margin: 0 auto;">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title"><i class="fa-solid fa-user-plus" style="color: var(--accent-purple);"></i> Cadastrar e Ativar Novo Cliente (WPlay API)</h2>
+                <p class="panel-subtitle">Crie a conta conectando em tempo real ao painel WPlay e consuma os créditos da sua conta</p>
+              </div>
+            </div>
+
+            <form id="create-user-form">
+              <div class="form-group">
+                <label class="form-label">Plano e Pacote WPlay *</label>
+                <select class="form-select" id="cu-plan" required>
+                  <option value="Ultra 1 Krator+ (1 crédito / mês)">Ultra 1 Krator+ (1 crédito / mês) - R$ 30,00/mês</option>
+                  <option value="Ultra Light P2P (1 crédito / mês)">Ultra Light P2P (1 crédito / mês) - R$ 25,00/mês</option>
+                  <option value="Servidor Completo 2 Telas (2 créditos)">Servidor Completo 2 Telas (2 créditos) - R$ 50,00/mês</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Nome do Cliente *</label>
+                  <input type="text" class="form-input" id="cu-name" placeholder="Ex: Hercilio Camargo" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">WhatsApp para Cobrança (com DDD) *</label>
+                  <input type="text" class="form-input" id="cu-whatsapp" placeholder="+55 11 99999-9999" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Usuário de Acesso WPlay <span style="font-weight: 400; color: var(--accent-cyan);">(Gerado automático se vazio)</span></label>
+                  <input type="text" class="form-input" id="cu-username" placeholder="Ex: w417h78">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Senha de Acesso</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" class="form-input" id="cu-password" placeholder="Ex: 59313wv">
+                    <button type="button" class="btn btn-secondary" id="btn-gen-pass" title="Gerar Senha Aleatória"><i class="fa-solid fa-dice"></i></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Telegram (Opcional)</label>
+                  <input type="text" class="form-input" id="cu-telegram" placeholder="@usuario_telegram">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">E-mail (Opcional)</label>
+                  <input type="email" class="form-input" id="cu-email" placeholder="cliente@email.com">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Observações internas / Notas</label>
+                <textarea class="form-textarea" id="cu-notes" rows="3" placeholder="Ex: Cliente prefere pagar por PIX Mercado Pago todo dia 15..."></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                  <i class="fa-solid fa-circle-info text-accent"></i> O cadastro consome <strong>1 crédito</strong> e sincroniza ao vivo na API da WPlay.
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 14px 32px;">
+                  <i class="fa-solid fa-check"></i> Salvar e Ativar na WPlay
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </section>
+
+
+        <!-- =========================================================
+             TAB 4: MEUS TESTES GERADOS
+             ========================================================= -->
+        <section class="tab-section" id="tab-tests-list">
+          <div class="card-panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-cyan);"></i> Meus Testes Gerados</h2>
+                <p class="panel-subtitle">Gerencie testes de curto prazo e converta-os em clientes pagantes com 1 clique</p>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-new-test-top">
+                <i class="fa-solid fa-plus"></i> Novo Teste
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="custom-table" id="tests-table">
+                <thead>
+                  <tr>
+                    <th>ID Teste</th>
+                    <th>Credenciais</th>
+                    <th>Pacote</th>
+                    <th>Data de Criação & Duração</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Ações de Conversão</th>
+                  </tr>
+                </thead>
+                <tbody id="tests-tbody">
+                  <!-- Dynamically populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- =========================================================
+             TAB 5: CONFIGURAÇÃO WPAY & TOKEN API WPLAY
+             ========================================================= -->
+        <section class="tab-section" id="tab-wpay-config">
+          <div class="card-panel mb-8" style="margin-bottom: 24px; border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title"><i class="fa-solid fa-plug-circle-check" style="color: var(--accent-emerald);"></i> Token de Integração Oficial Guma TV / WPlay</h2>
+                <p class="panel-subtitle">Conexão direta em tempo real aos servidores de `https://mcapi.knewcms.com:2087` (Painel Guma / WZ API)</p>
+              </div>
+              <span class="badge badge-active" style="font-size: 0.9rem; padding: 8px 16px;"><i class="fa-solid fa-check"></i> API CONECTADA</span>
+            </div>
+
+            <form id="api-token-form">
+              <div class="form-group">
+                <label class="form-label">Token de Integração Ativo (Painel Guma)</label>
+                <div style="display: flex; gap: 12px;">
+                  <input type="text" class="form-input mono-text" id="api-token-input" value="wz_d5dc6ad7b3056b60f1f008c20f9aed79" style="font-size: 1rem; color: var(--accent-emerald);" required>
+                  <button type="submit" class="btn btn-emerald" style="white-space: nowrap;">
+                    <i class="fa-solid fa-rotate"></i> Atualizar Token & Testar
+                  </button>
+                </div>
+              </div>
+            </form>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
+              <i class="fa-solid fa-circle-info text-accent"></i> Com esse token ativo no Painel Guma, qualquer alteração, cadastro de usuário ou renovação reflete automaticamente na sua conta oficial da WPlay na hora.
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title"><i class="fa-solid fa-wallet" style="color: var(--accent-cyan);"></i> Gateways de Pagamento (WPay Automático)</h2>
+                <p class="panel-subtitle">Conecte seus meios de pagamento PIX para envio automático de cobranças via link</p>
+              </div>
+            </div>
+
+            <div class="wpay-grid mb-8" style="margin-bottom: 32px;">
+              <!-- Mercado Pago -->
+              <div class="gateway-card">
+                <div class="gateway-icon" style="color: #009ee3; border: 1px solid #009ee3;"><i class="fa-solid fa-handshake-angle"></i></div>
+                <div class="gateway-title">Mercado Pago</div>
+                <div class="gateway-status" style="color: var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> API Conectada (PIX Instantâneo)</div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="alert('Mercado Pago já está conectado e operando em tempo real!')">Configurar Chave API</button>
+              </div>
+
+              <!-- Asaas -->
+              <div class="gateway-card">
+                <div class="gateway-icon" style="color: #0030b9; border: 1px solid #0030b9;"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="gateway-title">Asaas PIX / Boleto</div>
+                <div class="gateway-status">Não conectado</div>
+                <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="openGatewayModal('Asaas')">Conectar API</button>
+              </div>
+
+              <!-- Quickway -->
+              <div class="gateway-card">
+                <div class="gateway-icon" style="color: var(--accent-purple); border: 1px solid var(--accent-purple);"><i class="fa-solid fa-bolt"></i></div>
+                <div class="gateway-title">Quickway PIX</div>
+                <div class="gateway-status">Não conectado</div>
+                <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="openGatewayModal('Quickway')">Conectar API</button>
+              </div>
+
+              <!-- BrcPix -->
+              <div class="gateway-card">
+                <div class="gateway-icon" style="color: var(--accent-emerald); border: 1px solid var(--accent-emerald);"><i class="fa-solid fa-qrcode"></i></div>
+                <div class="gateway-title">BrcPix Gateway</div>
+                <div class="gateway-status">Não conectado</div>
+                <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="openGatewayModal('BrcPix')">Conectar API</button>
+              </div>
+            </div>
+
+            <!-- Settings Checklist -->
+            <div style="background: rgba(13, 18, 30, 0.6); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Regras de Cobrança e Notificação</h3>
+              
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div>
+                  <div style="font-weight: 600;">Checkout Automático WPay</div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary);">Gera link de pagamento instantâneo com valor exato do plano ao clicar em "Cobrar via WPay"</div>
+                </div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div>
+                  <div style="font-weight: 600;">Mensagem de Saudação WhatsApp</div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary);">Incluir instruções de acesso (App WPlay, DNS, Usuário e Senha) junto com o link de cobrança</div>
+                </div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0;">
+                <div>
+                  <div style="font-weight: 600;">Baixa Automática de Vencimento</div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary);">Renovar automaticamente por +30 dias assim que o PIX for pago e confirmado via Webhook</div>
+                </div>
+                <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+  
+  <!-- Edit Client Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-pen-to-square text-accent"></i> Editar Dados do Cliente</h3>
+        <button class="modal-close" id="close-edit-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-user-form">
+          <input type="hidden" id="edit-user-id">
+          
+          <div class="form-group">
+            <label class="form-label">Nome do Cliente</label>
+            <input type="text" class="form-input" id="edit-name" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Usuário WPlay</label>
+              <input type="text" class="form-input" id="edit-username" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Senha</label>
+              <input type="text" class="form-input" id="edit-password" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">WhatsApp</label>
+              <input type="text" class="form-input" id="edit-whatsapp" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data Vencimento</label>
+              <input type="date" class="form-input" id="edit-expiration" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Plano</label>
+            <select class="form-select" id="edit-plan">
+              <option value="Ultra 1 Krator+">Ultra 1 Krator+</option>
+              <option value="Ultra Light P2P">Ultra Light P2P</option>
+              <option value="Servidor Completo FHD/4K">Servidor Completo FHD/4K</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-edit">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-edit"><i class="fa-solid fa-check"></i> Atualizar Dados na API</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extend Expiration Modal -->
+  <div class="modal-overlay" id="extend-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-calendar-plus" style="color: var(--accent-emerald);"></i> Estender Prazo / Renovar na WPlay</h3>
+        <button class="modal-close" id="close-extend-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="extend-user-id">
+        <p style="margin-bottom: 20px; color: var(--text-secondary);">Escolha quantos meses ou dias deseja adicionar ao vencimento de <strong id="extend-user-name" style="color: #fff;"></strong> na API oficial.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+          <button class="btn btn-secondary btn-extend-option" data-days="30" style="flex-direction: column; padding: 16px;">
+            <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-emerald);">+1 Mês</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">30 dias (1 crédito)</span>
+          </button>
+          <button class="btn btn-secondary btn-extend-option" data-days="60" style="flex-direction: column; padding: 16px;">
+            <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-emerald);">+2 Meses</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">60 dias (2 créditos)</span>
+          </button>
+          <button class="btn btn-secondary btn-extend-option" data-days="90" style="flex-direction: column; padding: 16px;">
+            <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-emerald);">+3 Meses</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">90 dias (3 créditos)</span>
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ou dias personalizados</label>
+          <input type="number" class="form-input" id="extend-custom-days" placeholder="Ex: 15" min="1">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-extend">Cancelar</button>
+        <button class="btn btn-emerald" id="btn-confirm-extend"><i class="fa-solid fa-check"></i> Confirmar na WPlay API</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Main JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
