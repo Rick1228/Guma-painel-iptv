@@ -960,6 +960,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Button 3: Verify Payment Status & Automatically Renew on WPlay API (+30 days)
+  const btnVerifyRenew = document.getElementById('btn-verify-and-renew-now');
+  if (btnVerifyRenew) {
+    btnVerifyRenew.addEventListener('click', async () => {
+      const userId = document.getElementById('pix-client-id').value;
+      const username = document.getElementById('pix-client-username').value;
+      const clientName = document.getElementById('pix-modal-name').textContent;
+      const price = document.getElementById('pix-client-price').value;
+      const phoneRaw = document.getElementById('pix-client-phone').value;
+      const phone = phoneRaw.replace(/[^0-9]/g, '');
+
+      btnVerifyRenew.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verificando Pagamento PIX e Renovando...`;
+      btnVerifyRenew.disabled = true;
+
+      try {
+        const res = await fetch('/api/whatsapp/check-pix-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, username, clientName, price, phone })
+        });
+        const data = await res.json();
+
+        if (data.success && data.paid) {
+          const statusBox = document.getElementById('pix-payment-status-box');
+          if (statusBox) {
+            statusBox.style.background = 'rgba(16, 185, 129, 0.25)';
+            statusBox.style.border = '2px solid #25d366';
+            statusBox.innerHTML = `
+              <div style="font-size: 0.95rem; font-weight: 800; color: #25d366; margin-bottom: 8px;">
+                <i class="fa-solid fa-check-double"></i> PAGAMENTO APROVADO & RENOVAÇÃO EFETUADA!
+              </div>
+              <div style="font-size: 0.8rem; color: #fff; margin-bottom: 12px;">
+                A assinatura de <strong>${clientName} (${username})</strong> foi estendida em <strong>+30 dias</strong> na WPlay API e o cliente foi notificado no WhatsApp da Guma!
+              </div>
+              <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="document.getElementById('pix-modal').classList.remove('active')">
+                <i class="fa-solid fa-thumbs-up"></i> Concluir & Atualizar Tabela
+              </button>
+            `;
+          }
+          showToast(`✅ Pagamento PIX de ${clientName} confirmado! Assinatura renovada por +30 dias!`, 'success');
+          setTimeout(() => syncUsersFromWPlayApi(), 1200);
+        } else {
+          showToast('Aguardando confirmação bancária do PIX no Mercado Pago...', 'info');
+          btnVerifyRenew.innerHTML = `<i class="fa-solid fa-bolt-lightning"></i> Verificar Pagamento Agora & Renovar Automaticamente (+30 Dias)`;
+          btnVerifyRenew.disabled = false;
+        }
+      } catch (err) {
+        showToast('Erro ao comunicar com verificador PIX', 'error');
+        btnVerifyRenew.innerHTML = `<i class="fa-solid fa-bolt-lightning"></i> Verificar Pagamento Agora & Renovar Automaticamente (+30 Dias)`;
+        btnVerifyRenew.disabled = false;
+      }
+    });
+  }
+
   // Close PIX Modal listeners
   ['close-pix-modal', 'close-pix-modal-footer'].forEach(id => {
     const el = document.getElementById(id);

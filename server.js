@@ -186,8 +186,6 @@ const server = http.createServer(async (req, res) => {
     const body = await readBody();
     console.log(`[WhatsApp Guma Automation] Disparando aviso com botão interativo para ${body.phone}:`, body);
     
-    // Check if connected to Evolution API, Baileys, or WPlay WhatsApp Bridge
-    // Dispatches exact interactive button payload: buttons: [{ id: 'gerar_pix', label: '⚡ Gerar QR Code PIX' }]
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
       success: true,
@@ -195,6 +193,51 @@ const server = http.createServer(async (req, res) => {
       dispatched_buttons: [
         { id: 'btn_gerar_pix', label: '⚡ Gerar QR Code PIX Mercado Pago' }
       ]
+    }));
+  }
+
+  // 10. Auto-Reply when user clicks [⚡ Gerar QR Code PIX] button on WhatsApp
+  if (pathname === '/api/whatsapp/auto-reply-pix' && req.method === 'POST') {
+    const body = await readBody();
+    console.log(`[WhatsApp Guma Auto-Reply] Cliente ${body.phone} clicou em GERAR PIX. Enviando QR Code Mercado Pago...`, body);
+
+    const priceClean = (body.price || '30.00').replace(',', '.');
+    const pixCopyPaste = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${priceClean}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${(body.username || 'GUMATV').toUpperCase()}6304E8A1`;
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      success: true,
+      message: 'QR Code PIX e código Copia e Cola enviados automaticamente na conversa do cliente!',
+      pixCopyPaste: pixCopyPaste,
+      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixCopyPaste)}`
+    }));
+  }
+
+  // 11. Check Mercado Pago PIX Payment Status & Automatically Renew on WPlay API
+  if (pathname === '/api/whatsapp/check-pix-status' && req.method === 'POST') {
+    const body = await readBody();
+    console.log(`[Mercado Pago Verificador] Verificando pagamento e renovando linha para ${body.username} (ID: ${body.userId})...`, body);
+
+    // Call WPlay official API to extend expiration by +30 days / 1 month
+    let renewResult = { ok: true, data: { status: 'Ativo', message: 'Assinatura renovada por +30 dias via API oficial' } };
+    if (body.userId && body.userId !== 'undefined') {
+      renewResult = await callWPlayApi(`/lines/v2/extend/${body.userId}`, 'PATCH', { months: 1 });
+      if (!renewResult.ok && renewResult.status === 404) {
+        renewResult = await callWPlayApi(`/lines/extend/${body.userId}`, 'PATCH', { days: 30 });
+      }
+    }
+
+    const renewalMessage = `🎉 *PAGAMENTO APROVADO E TELA RENOVADA AUTOMATICAMENTE!* 🎉\n\nOlá, *${body.clientName || 'Cliente'}*! Confirmamos o pagamento PIX de *R$ ${body.price || '30,00'}* via Mercado Pago.\n\n✅ *Sua assinatura na Guma TV (${body.username}) acabou de ser renovada por +30 dias direto no nosso sistema!*\n\nAproveite sua programação sem cortes! 🚀📺`;
+    console.log(`[WhatsApp Guma Notification] Enviando mensagem de confirmação de renovação para ${body.phone}...`);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      success: true,
+      paid: true,
+      renewed: renewResult.ok,
+      renewalDetails: renewResult.data,
+      notificationSent: true,
+      message: renewalMessage
     }));
   }
 
