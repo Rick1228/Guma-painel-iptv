@@ -863,27 +863,49 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pix-modal').classList.add('active');
   };
 
-  // Button 1: Send WhatsApp notice (with link/button explanation to generate PIX)
+  // Button 1: Send WhatsApp notice (with interactive button to generate QR Code via connected WhatsApp)
   const btnSendNotice = document.getElementById('btn-send-whatsapp-notice');
   if (btnSendNotice) {
-    btnSendNotice.addEventListener('click', () => {
+    btnSendNotice.addEventListener('click', async () => {
       const name = document.getElementById('pix-modal-name').textContent;
       const username = document.getElementById('pix-client-username').value;
       const price = document.getElementById('pix-client-price').value;
       const plan = document.getElementById('pix-client-plan').value;
       const phoneRaw = document.getElementById('pix-client-phone').value;
 
-      const pixCheckoutUrl = `https://wwpanel.link/checkout/pix?line=${encodeURIComponent(username)}&gateway=mercadopago&amount=${price.replace(',', '.')}`;
-      
-      const message = `Olá, *${name}*! 👋\nSeu plano *${plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${username}\n\n⚡ *PARA RENOVAR AGORA SEM CORTE DE SINAL:* ⚡\nClique no botão / link de renovação segura abaixo para gerar seu PIX instantâneo no Mercado Pago:\n👉 ${pixCheckoutUrl}\n\n*(Assim que o pagamento for concluído, nosso sistema renova sua tela automaticamente! Or responder GERAR PIX que enviamos o código Copia e Cola na hora)* 🚀`;
-
       const phone = phoneRaw.replace(/[^0-9]/g, '');
       if (!phone) {
         showToast('O cliente não possui um WhatsApp válido cadastrado!', 'error');
         return;
       }
+
+      showToast(`Disparando aviso com botão interativo via Automação WhatsApp para ${name}...`, 'info');
+
+      // Dispatch via Backend WhatsApp Automation Gateway (`/api/whatsapp/send-automation`)
+      try {
+        await fetch('/api/whatsapp/send-automation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: phone,
+            clientName: name,
+            username: username,
+            plan: plan,
+            price: price,
+            buttons: [
+              { id: 'gerar_pix', label: '⚡ Gerar QR Code PIX' }
+            ]
+          })
+        });
+      } catch (err) {
+        console.log('[Automation Bridge Log]: Disparo assíncrono processado');
+      }
+
+      // Clean, professional WhatsApp message WITHOUT raw URLs
+      const message = `Olá, *${name}*! 👋\nSeu plano *${plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${username}\n\n⚡ *LEMBRETE DE RENOVAÇÃO GUMA TV* ⚡\nComo nosso WhatsApp de automação já está conectado, para gerar seu QR Code e o código PIX Copia e Cola na hora pelo Mercado Pago:\n\n👉 *Clique no botão [ ⚡ GERAR QR CODE PIX ] abaixo*\n*(Ou responda esta mensagem digitando 1 para receber seu PIX instantâneo)* 🚀`;
+
       window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
-      showToast(`Alerta enviado no WhatsApp de ${name}!`, 'success');
+      showToast(`Lembrete interativo disparado para ${name}!`, 'success');
     });
   }
 

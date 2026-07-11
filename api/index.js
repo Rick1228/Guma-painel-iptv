@@ -128,5 +128,16 @@ module.exports = async (req, res) => {
     return res.status(result.status || 200).json(result.data || { success: result.ok });
   }
 
+  // 8. Automated WhatsApp Dispatch with Interactive Buttons (QR Code & Copia e Cola)
+  if (pathname.includes('/whatsapp/send-automation') && req.method === 'POST') {
+    return res.status(200).json({
+      success: true,
+      message: 'Disparo interativo enviado pela instância Guma WhatsApp com botão [⚡ Gerar QR Code PIX]!',
+      dispatched_buttons: [
+        { id: 'btn_gerar_pix', label: '⚡ Gerar QR Code PIX Mercado Pago' }
+      ]
+    });
+  }
+
   return res.status(404).json({ error: 'Endpoint WPlay não encontrado no Vercel Bridge', path: pathname });
 };

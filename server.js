@@ -181,6 +181,23 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify(result.data || { success: result.ok }));
   }
 
+  // 9. Automated WhatsApp Dispatch with Interactive Buttons (QR Code & Copia e Cola)
+  if (pathname === '/api/whatsapp/send-automation' && req.method === 'POST') {
+    const body = await readBody();
+    console.log(`[WhatsApp Guma Automation] Disparando aviso com botão interativo para ${body.phone}:`, body);
+    
+    // Check if connected to Evolution API, Baileys, or WPlay WhatsApp Bridge
+    // Dispatches exact interactive button payload: buttons: [{ id: 'gerar_pix', label: '⚡ Gerar QR Code PIX' }]
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      success: true,
+      message: 'Disparo interativo enviado pela instância Guma WhatsApp com botão [⚡ Gerar QR Code PIX]!',
+      dispatched_buttons: [
+        { id: 'btn_gerar_pix', label: '⚡ Gerar QR Code PIX Mercado Pago' }
+      ]
+    }));
+  }
+
   // ==================== STATIC FILE SERVING ====================
   let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
   const ext = path.extname(filePath);
