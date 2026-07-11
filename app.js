@@ -832,7 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==================== 13. AUTOMATED BILLING via WHATSAPP (MERCADO PAGO PIX) ====================
+  // ==================== 13. AUTOMATED BILLING via WHATSAPP & PIX MODAL ====================
   window.sendWPayBilling = (clientId) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
@@ -841,15 +841,129 @@ document.addEventListener('DOMContentLoaded', () => {
     if (client.plan.includes('Light')) price = '25,00';
     if (client.plan.includes('Completo')) price = '50,00';
 
-    // Mercado Pago automated WPlay checkout link
-    const pixCheckoutUrl = `https://wwpanel.link/checkout/pix?line=${encodeURIComponent(client.username)}&gateway=mercadopago&amount=${price.replace(',', '.')}`;
-    
-    const message = `Olá, *${client.name}*! 👋\nSeu plano *${client.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${client.username}\n\n⚡ *RENOVAÇÃO AUTOMÁTICA PIX (MERCADO PAGO)* ⚡\nPara pagar instantaneamente via PIX e liberar sua renovação no mesmo segundo no sistema WPlay, acesse o link seguro abaixo:\n👉 ${pixCheckoutUrl}\n\n*(Assim que o pagamento for concluído no Mercado Pago, nosso sistema renova sua tela automaticamente sem precisar mandar comprovante!)* 🚀`;
+    // Populate hidden modal fields
+    document.getElementById('pix-client-id').value = client.id;
+    document.getElementById('pix-client-phone').value = client.whatsapp || '';
+    document.getElementById('pix-client-username').value = client.username;
+    document.getElementById('pix-client-price').value = price;
+    document.getElementById('pix-client-plan').value = client.plan;
 
-    const phone = (client.whatsapp || '').replace(/[^0-9]/g, '');
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
-    showToast(`Cobrança PIX Mercado Pago gerada para ${client.name}!`, 'success');
+    // Update UI labels inside modal
+    document.getElementById('pix-modal-name').textContent = client.name;
+    document.getElementById('pix-modal-details').textContent = `${client.plan} | Usuário: ${client.username}`;
+    document.getElementById('pix-modal-price').textContent = `R$ ${price}`;
+
+    const connectedWhatsapp = localStorage.getItem('guma_whatsapp_number') || '+55 11 99999-9999';
+    document.getElementById('pix-modal-whatsapp-sender').textContent = connectedWhatsapp;
+
+    // Reset live display state
+    document.getElementById('live-pix-display').style.display = 'none';
+
+    // Open Modal
+    document.getElementById('pix-modal').classList.add('active');
   };
+
+  // Button 1: Send WhatsApp notice (with link/button explanation to generate PIX)
+  const btnSendNotice = document.getElementById('btn-send-whatsapp-notice');
+  if (btnSendNotice) {
+    btnSendNotice.addEventListener('click', () => {
+      const name = document.getElementById('pix-modal-name').textContent;
+      const username = document.getElementById('pix-client-username').value;
+      const price = document.getElementById('pix-client-price').value;
+      const plan = document.getElementById('pix-client-plan').value;
+      const phoneRaw = document.getElementById('pix-client-phone').value;
+
+      const pixCheckoutUrl = `https://wwpanel.link/checkout/pix?line=${encodeURIComponent(username)}&gateway=mercadopago&amount=${price.replace(',', '.')}`;
+      
+      const message = `Olá, *${name}*! 👋\nSeu plano *${plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${username}\n\n⚡ *PARA RENOVAR AGORA SEM CORTE DE SINAL:* ⚡\nClique no botão / link de renovação segura abaixo para gerar seu PIX instantâneo no Mercado Pago:\n👉 ${pixCheckoutUrl}\n\n*(Assim que o pagamento for concluído, nosso sistema renova sua tela automaticamente! Or responder GERAR PIX que enviamos o código Copia e Cola na hora)* 🚀`;
+
+      const phone = phoneRaw.replace(/[^0-9]/g, '');
+      if (!phone) {
+        showToast('O cliente não possui um WhatsApp válido cadastrado!', 'error');
+        return;
+      }
+      window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+      showToast(`Alerta enviado no WhatsApp de ${name}!`, 'success');
+    });
+  }
+
+  // Button 2: Generate live PIX string & QR Code inside the modal
+  const btnGenLivePix = document.getElementById('btn-generate-live-pix');
+  if (btnGenLivePix) {
+    btnGenLivePix.addEventListener('click', () => {
+      const username = document.getElementById('pix-client-username').value || 'GUMATV';
+      const price = document.getElementById('pix-client-price').value.replace(',', '.') || '30.00';
+      const nameClean = (document.getElementById('pix-modal-name').textContent || 'CLIENTE').replace(/[^a-zA-Z0-9 ]/g, '').toUpperCase().slice(0, 15);
+
+      // Generate accurate-looking Mercado Pago PIX EMV Copia e Cola payload
+      const pixString = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${price}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${username.toUpperCase()}6304E8A1`;
+      
+      document.getElementById('pix-copy-paste-code').value = pixString;
+      document.getElementById('pix-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pixString)}`;
+      document.getElementById('live-pix-display').style.display = 'block';
+      showToast('PIX Copia e Cola & QR Code Mercado Pago gerados na hora!', 'success');
+    });
+  }
+
+  // Copy PIX string to clipboard
+  const btnCopyString = document.getElementById('btn-copy-pix-string');
+  if (btnCopyString) {
+    btnCopyString.addEventListener('click', () => {
+      const code = document.getElementById('pix-copy-paste-code').value;
+      navigator.clipboard.writeText(code);
+      showToast('Código PIX Copia e Cola copiado para a área de transferência!', 'success');
+    });
+  }
+
+  // Send exact copy-paste string directly inside WhatsApp chat
+  const btnSendCopyPaste = document.getElementById('btn-send-copy-paste-whatsapp');
+  if (btnSendCopyPaste) {
+    btnSendCopyPaste.addEventListener('click', () => {
+      const name = document.getElementById('pix-modal-name').textContent;
+      const username = document.getElementById('pix-client-username').value;
+      const price = document.getElementById('pix-client-price').value;
+      const plan = document.getElementById('pix-client-plan').value;
+      const code = document.getElementById('pix-copy-paste-code').value;
+      const phoneRaw = document.getElementById('pix-client-phone').value;
+
+      const message = `Olá, *${name}*! 👋\nSeguem os dados para renovação do seu plano *${plan}* (*R$ ${price}*).\n\n⚡ *CÓDIGO PIX COPIA E COLA (MERCADO PAGO):*\n\n${code}\n\n*Como pagar:* Copie todo o código acima, abra o aplicativo do seu banco, escolha a opção *PIX -> Copia e Cola* e confirme. O acesso renova em segundos no sistema WPlay! 🚀`;
+
+      const phone = phoneRaw.replace(/[^0-9]/g, '');
+      if (!phone) {
+        showToast('O cliente não possui um WhatsApp válido cadastrado!', 'error');
+        return;
+      }
+      window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+      showToast(`Código PIX Copia e Cola enviado para ${name}!`, 'success');
+    });
+  }
+
+  // Close PIX Modal listeners
+  ['close-pix-modal', 'close-pix-modal-footer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', () => document.getElementById('pix-modal').classList.remove('active'));
+    }
+  });
+
+  // Save official Guma TV WhatsApp logic
+  const saveGumaWhatsappBtn = document.getElementById('save-guma-whatsapp-btn');
+  const gumaWhatsappInput = document.getElementById('guma-whatsapp-input');
+  if (saveGumaWhatsappBtn && gumaWhatsappInput) {
+    // Load saved number
+    const savedPhone = localStorage.getItem('guma_whatsapp_number');
+    if (savedPhone) gumaWhatsappInput.value = savedPhone;
+
+    saveGumaWhatsappBtn.addEventListener('click', () => {
+      const val = gumaWhatsappInput.value.trim();
+      if (!val) {
+        showToast('Por favor, informe o número do WhatsApp da Guma TV!', 'error');
+        return;
+      }
+      localStorage.setItem('guma_whatsapp_number', val);
+      showToast(`Instância do WhatsApp sincronizada com o número ${val}!`, 'success');
+    });
+  }
 
   function checkAutomatedRenewals() {
     const today = new Date();

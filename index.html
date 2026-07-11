@@ -452,6 +452,32 @@
             </div>
           </div>
 
+          <!-- Conectar WhatsApp Oficial da Guma TV -->
+          <div class="card-panel mb-8" style="margin-bottom: 24px; border-color: rgba(37, 211, 102, 0.4); box-shadow: 0 0 25px rgba(37, 211, 102, 0.15);">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title"><i class="fa-brands fa-whatsapp" style="color: #25d366; font-size: 1.4rem;"></i> Conectar WhatsApp Oficial da Guma TV</h2>
+                <p class="panel-subtitle">Configure o WhatsApp da sua marca para envio automatizado de alertas de vencimento e PIX Mercado Pago</p>
+              </div>
+              <span class="badge badge-active" id="whatsapp-guma-badge" style="font-size: 0.88rem; padding: 8px 16px; background: rgba(37, 211, 102, 0.2); color: #25d366; border: 1px solid #25d366;"><i class="fa-solid fa-check"></i> WHATSAPP PRONTO</span>
+            </div>
+
+            <div class="form-row" style="align-items: flex-end;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label class="form-label">Número do WhatsApp Guma TV (que enviará as cobranças PIX)</label>
+                <input type="text" class="form-input" id="guma-whatsapp-input" placeholder="+55 11 99999-9999" value="+55 11 99999-9999">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <button type="button" class="btn btn-emerald" style="width: 100%; background: #25d366; border-color: #25d366;" id="save-guma-whatsapp-btn">
+                  <i class="fa-solid fa-qrcode"></i> Sincronizar Instância WhatsApp Guma
+                </button>
+              </div>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-robot" style="color: #25d366;"></i> <span>Quando um cliente estiver preste a vencer, a instância conectada enviará o aviso e disponibilizará o botão de geração de PIX diretamente ao cliente.</span>
+            </div>
+          </div>
+
           <div class="card-panel">
             <div class="panel-header">
               <div>
@@ -621,6 +647,100 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btn-cancel-extend">Cancelar</button>
         <button class="btn btn-emerald" id="btn-confirm-extend"><i class="fa-solid fa-check"></i> Confirmar na WPlay API</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIX & Automated Billing Modal -->
+  <div class="modal-overlay" id="pix-modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-qrcode" style="color: #25d366;"></i> Gerador PIX Mercado Pago & Cobrança WhatsApp</h3>
+        <button class="modal-close" id="close-pix-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pix-client-id">
+        <input type="hidden" id="pix-client-phone">
+        <input type="hidden" id="pix-client-username">
+        <input type="hidden" id="pix-client-price">
+        <input type="hidden" id="pix-client-plan">
+
+        <!-- Client & Plan Info Box -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: #fff;" id="pix-modal-name">Cliente</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;" id="pix-modal-details">Plano | Usuário</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Valor Renovação</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #25d366;" id="pix-modal-price">R$ 30,00</div>
+          </div>
+        </div>
+
+        <!-- WhatsApp Guma Connection Status Inside Modal -->
+        <div style="background: rgba(37, 211, 102, 0.08); border: 1px dashed #25d366; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa-brands fa-whatsapp" style="font-size: 1.5rem; color: #25d366;"></i>
+            <div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">WhatsApp Guma Conectado</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary);" id="pix-modal-whatsapp-sender">+55 11 99999-9999</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=\'api-settings\']').click(); document.getElementById('pix-modal').classList.remove('active');">
+            <i class="fa-solid fa-gear"></i> Trocar WhatsApp
+          </button>
+        </div>
+
+        <!-- Option 1: Send WhatsApp Notice With Button/Link -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; color: #fff;"><i class="fa-solid fa-paper-plane text-accent"></i> 1. Enviar Alerta de Vencimento com Link/Botão PIX</h4>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center; background: #25d366; border-color: #25d366; padding: 14px;" id="btn-send-whatsapp-notice">
+            <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> Enviar Mensagem no WhatsApp (Com Botão Gerar PIX)
+          </button>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">
+            Envia a mensagem oficial avisando que está vencendo e disponibiliza o acesso imediato à renovação do Mercado Pago.
+          </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 20px 0;">
+
+        <!-- Option 2: Generate Instant PIX Copy Paste & QR Code -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff;"><i class="fa-solid fa-bolt" style="color: var(--accent-amber);"></i> 2. Gerar Código PIX Copia e Cola & QR Code na Hora</h4>
+            <button class="btn btn-emerald btn-sm" id="btn-generate-live-pix">
+              <i class="fa-solid fa-qrcode"></i> Gerar PIX Mercado Pago Agora
+            </button>
+          </div>
+
+          <!-- Dynamic PIX Display Area (Hidden by default) -->
+          <div id="live-pix-display" style="display: none; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; text-align: center;">
+            <div style="font-size: 0.82rem; color: var(--accent-emerald); font-weight: 700; margin-bottom: 12px;">
+              <i class="fa-solid fa-check-circle"></i> CÓDIGO PIX MERCADO PAGO GERADO E PRONTO PARA PAGAMENTO
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; align-items: center; margin-bottom: 16px;">
+              <div style="background: #fff; padding: 12px; border-radius: 8px;">
+                <img id="pix-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=00020126580014br.gov.bcb.pix0136guma.pix" alt="QR Code PIX" style="width: 140px; height: 140px; display: block;">
+              </div>
+              <div style="flex: 1; min-width: 220px; text-align: left;">
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px;">CÓDIGO COPIA E COLA (MERCADO PAGO):</div>
+                <textarea class="form-input mono-text" id="pix-copy-paste-code" readonly style="font-size: 0.75rem; height: 85px; resize: none; margin-bottom: 8px;">00020126580014br.gov.bcb.pix0136guma.pix@wplay.com520400005303986540530.005802BR5908GUMA TV6009SAO PAULO62170513GUMA67G6216304E8A1</textarea>
+                <button class="btn btn-secondary btn-sm" style="width: 100%;" id="btn-copy-pix-string">
+                  <i class="fa-regular fa-copy"></i> Copiar Código PIX
+                </button>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; justify-content: center; background: #009ee3; border-color: #009ee3;" id="btn-send-copy-paste-whatsapp">
+              <i class="fa-brands fa-whatsapp"></i> Enviar Código Copia e Cola Direto para o Cliente no WhatsApp
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="close-pix-modal-footer">Fechar</button>
       </div>
     </div>
   </div>
