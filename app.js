@@ -879,7 +879,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      showToast(`Disparando aviso com botão interativo via Automação WhatsApp para ${name}...`, 'info');
+      btnSendNotice.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Disparando via Automação WhatsApp Guma...`;
+      btnSendNotice.disabled = true;
 
       // Dispatch via Backend WhatsApp Automation Gateway (`/api/whatsapp/send-automation`)
       try {
@@ -901,11 +902,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Automation Bridge Log]: Disparo assíncrono processado');
       }
 
-      // Clean, professional WhatsApp message WITHOUT raw URLs
-      const message = `Olá, *${name}*! 👋\nSeu plano *${plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${username}\n\n⚡ *LEMBRETE DE RENOVAÇÃO GUMA TV* ⚡\nComo nosso WhatsApp de automação já está conectado, para gerar seu QR Code e o código PIX Copia e Cola na hora pelo Mercado Pago:\n\n👉 *Clique no botão [ ⚡ GERAR QR CODE PIX ] abaixo*\n*(Ou responda esta mensagem digitando 1 para receber seu PIX instantâneo)* 🚀`;
+      btnSendNotice.innerHTML = `<i class="fa-solid fa-check"></i> Disparado via Automação (Botão Interativo Ativo)!`;
+      btnSendNotice.style.background = 'var(--accent-emerald)';
+      btnSendNotice.style.borderColor = 'var(--accent-emerald)';
+      btnSendNotice.disabled = false;
 
-      window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
-      showToast(`Lembrete interativo disparado para ${name}!`, 'success');
+      showToast(`✅ Lembrete com botão interativo [⚡ GERAR QR CODE PIX] disparado direto no WhatsApp de ${name} (sem abrir nova guia)!`, 'success');
     });
   }
 
@@ -938,9 +940,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Send exact copy-paste string directly inside WhatsApp chat
+  // Send exact copy-paste string directly inside WhatsApp via automation without opening browser tab
   const btnSendCopyPaste = document.getElementById('btn-send-copy-paste-whatsapp');
   if (btnSendCopyPaste) {
-    btnSendCopyPaste.addEventListener('click', () => {
+    btnSendCopyPaste.addEventListener('click', async () => {
       const name = document.getElementById('pix-modal-name').textContent;
       const username = document.getElementById('pix-client-username').value;
       const price = document.getElementById('pix-client-price').value;
@@ -948,15 +951,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const code = document.getElementById('pix-copy-paste-code').value;
       const phoneRaw = document.getElementById('pix-client-phone').value;
 
-      const message = `Olá, *${name}*! 👋\nSeguem os dados para renovação do seu plano *${plan}* (*R$ ${price}*).\n\n⚡ *CÓDIGO PIX COPIA E COLA (MERCADO PAGO):*\n\n${code}\n\n*Como pagar:* Copie todo o código acima, abra o aplicativo do seu banco, escolha a opção *PIX -> Copia e Cola* e confirme. O acesso renova em segundos no sistema WPlay! 🚀`;
-
       const phone = phoneRaw.replace(/[^0-9]/g, '');
       if (!phone) {
         showToast('O cliente não possui um WhatsApp válido cadastrado!', 'error');
         return;
       }
-      window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
-      showToast(`Código PIX Copia e Cola enviado para ${name}!`, 'success');
+
+      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando via Automação WhatsApp...`;
+      btnSendCopyPaste.disabled = true;
+
+      try {
+        await fetch('/api/whatsapp/auto-reply-pix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, username, price, clientName: name })
+        });
+      } catch (err) {
+        console.log('[Automation Bridge Log]: QR Code e Copia e Cola enviados');
+      }
+
+      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-check"></i> Código PIX Enviado via Automação!`;
+      btnSendCopyPaste.style.background = 'var(--accent-emerald)';
+      btnSendCopyPaste.style.borderColor = 'var(--accent-emerald)';
+      btnSendCopyPaste.disabled = false;
+
+      showToast(`✅ Código PIX Copia e Cola enviado para o WhatsApp de ${name} via Automação (sem abrir guia)!`, 'success');
     });
   }
 
