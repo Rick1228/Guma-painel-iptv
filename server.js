@@ -191,15 +191,22 @@ const server = http.createServer(async (req, res) => {
       let cleanBase = body.evolutionUrl.replace(/\/$/, '');
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
-      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
-      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
+      const targetUrl = `${cleanBase}/message/sendButtons/${body.evolutionInstance}`;
+      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e liberar sua tela no mesmo segundo:\n\n👉 Clique no botão abaixo *GERAR PIX* (ou digite *1*) para receber o código Copia e Cola na hora! 🚀`;
       try {
         await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
-          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: textMsg })
+          body: JSON.stringify({
+            number: body.phone.replace(/[^0-9]/g, ''),
+            title: 'GUMA TV - RENOVAÇÃO INSTANTÂNEA',
+            description: textMsg,
+            buttons: [
+              { type: 'reply', displayText: '⚡ GERAR PIX', id: 'gerar_pix' }
+            ]
+          })
         });
-        console.log(`[Evolution API v2.3.7] Mensagem disparada com sucesso para ${body.phone}! (${targetUrl})`);
+        console.log(`[Evolution API v2.3.7] Botão interativo disparado com sucesso para ${body.phone}! (${targetUrl})`);
       } catch (err) {
         console.error('[Evolution API Dispatch Error]:', err.message);
       }
