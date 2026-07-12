@@ -879,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      btnSendNotice.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Disparando via Automação WhatsApp Guma...`;
+      btnSendNotice.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Disparando via WhatsApp Guma...`;
       btnSendNotice.disabled = true;
 
       // Dispatch via Backend WhatsApp Automation Gateway (`/api/whatsapp/send-automation`)
@@ -902,12 +902,20 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Automation Bridge Log]: Disparo assíncrono processado');
       }
 
-      btnSendNotice.innerHTML = `<i class="fa-solid fa-check"></i> Disparado via Automação (Botão Interativo Ativo)!`;
+      const apiToken = localStorage.getItem('guma_whatsapp_api_token');
+      if (!apiToken) {
+        // Modo 1: Disparo WhatsApp Web Limpo & Profissional (Sem URL feia, com instrução direta de renovação)
+        const cleanMessage = `Olá, *${name}*! 👋\nSeu plano *${plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${price}*.\n\n👤 *Seu Usuário:* ${username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
+        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(cleanMessage)}`, '_blank');
+        showToast(`✅ Lembrete limpo aberto no WhatsApp de ${name}!`, 'success');
+      } else {
+        showToast(`✅ Lembrete com botão interativo disparado em segundo plano via Instância API de ${name}!`, 'success');
+      }
+
+      btnSendNotice.innerHTML = `<i class="fa-solid fa-check"></i> Mensagem de Lembrete Enviada!`;
       btnSendNotice.style.background = 'var(--accent-emerald)';
       btnSendNotice.style.borderColor = 'var(--accent-emerald)';
       btnSendNotice.disabled = false;
-
-      showToast(`✅ Lembrete com botão interativo [⚡ GERAR QR CODE PIX] disparado direto no WhatsApp de ${name} (sem abrir nova guia)!`, 'success');
     });
   }
 
@@ -957,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando via Automação WhatsApp...`;
+      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando via WhatsApp Guma...`;
       btnSendCopyPaste.disabled = true;
 
       try {
@@ -970,7 +978,16 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Automation Bridge Log]: QR Code e Copia e Cola enviados');
       }
 
-      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-check"></i> Código PIX Enviado via Automação!`;
+      const apiToken = localStorage.getItem('guma_whatsapp_api_token');
+      if (!apiToken) {
+        const cleanCopyMsg = `Olá, *${name}*! 👋\nSeguem os dados para renovação imediata do seu plano *${plan}* (*R$ ${price}*).\n\n⚡ *CÓDIGO PIX COPIA E COLA (MERCADO PAGO):*\n\n${code}\n\n*Como pagar:* Copie todo o código acima, abra o aplicativo do seu banco, escolha a opção *PIX -> Copia e Cola* e confirme. O acesso renova em segundos no sistema WPlay! 🚀`;
+        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(cleanCopyMsg)}`, '_blank');
+        showToast(`✅ Código Copia e Cola aberto no WhatsApp de ${name}!`, 'success');
+      } else {
+        showToast(`✅ Código PIX Copia e Cola enviado para o WhatsApp de ${name} via Automação!`, 'success');
+      }
+
+      btnSendCopyPaste.innerHTML = `<i class="fa-solid fa-check"></i> Código PIX Enviado!`;
       btnSendCopyPaste.style.background = 'var(--accent-emerald)';
       btnSendCopyPaste.style.borderColor = 'var(--accent-emerald)';
       btnSendCopyPaste.disabled = false;
