@@ -191,22 +191,30 @@ const server = http.createServer(async (req, res) => {
       let cleanBase = body.evolutionUrl.replace(/\/$/, '');
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
-      const targetUrl = `${cleanBase}/message/sendButtons/${body.evolutionInstance}`;
-      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e liberar sua tela no mesmo segundo:\n\n👉 Clique no botão abaixo *GERAR PIX* (ou digite *1*) para receber o código Copia e Cola na hora! 🚀`;
+      const targetNumber = body.phone.replace(/[^0-9]/g, '');
+      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e liberar sua tela no mesmo segundo:\n\n👉 *Selecione a opção 1 na enquete abaixo* (ou digite *1*) para receber o seu código Copia e Cola instantâneo! 🚀`;
+      
       try {
-        await fetch(targetUrl, {
+        // 1. Send detailed informative message (100% compatible with both Web and Mobile)
+        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: targetNumber, text: textMsg })
+        });
+
+        // 2. Send interactive Poll/Enquete right below (works on WhatsApp Web, PC and Mobile without error)
+        await fetch(`${cleanBase}/message/sendPoll/${body.evolutionInstance}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
           body: JSON.stringify({
-            number: body.phone.replace(/[^0-9]/g, ''),
-            title: 'GUMA TV - RENOVAÇÃO INSTANTÂNEA',
-            description: textMsg,
-            buttons: [
-              { type: 'reply', displayText: '⚡ GERAR PIX', id: 'gerar_pix' }
-            ]
+            number: targetNumber,
+            name: '⚡ RENOVAÇÃO GUMA TV - SELECIONE ABAIXO:',
+            selectableCount: 1,
+            values: ['⚡ 1. GERAR CÓDIGO PIX COPIA E COLA', '💬 2. FALAR COM SUPORTE GUMA TV']
           })
         });
-        console.log(`[Evolution API v2.3.7] Botão interativo disparado com sucesso para ${body.phone}! (${targetUrl})`);
+
+        console.log(`[Evolution API v2.3.7] Lembrete + Enquete Interativa disparados com sucesso para ${body.phone}!`);
       } catch (err) {
         console.error('[Evolution API Dispatch Error]:', err.message);
       }
