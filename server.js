@@ -238,20 +238,36 @@ const server = http.createServer(async (req, res) => {
     const priceClean = (body.price || '30.00').replace(',', '.');
     const pixCopyPaste = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${priceClean}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${(body.username || 'GUMATV').toUpperCase()}6304E8A1`;
 
-    // Real dispatch copy & paste code via Evolution API v2.3.7 if connected
+    // Real dispatch QR Code Image + Copy & Paste text via Evolution API v2.3.7 if connected
     if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
       let cleanBase = body.evolutionUrl.replace(/\/$/, '');
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
-      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
+      const targetNumber = body.phone.replace(/[^0-9]/g, '');
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCopyPaste)}`;
       const copyMsg = `⚡ *AQUI ESTÁ SEU CÓDIGO PIX COPIA E COLA (MERCADO PAGO)* ⚡\n\n${pixCopyPaste}\n\n*(Assim que você realizar o pagamento no aplicativo do seu banco, nosso sistema WPlay identifica o PIX instantaneamente e renova +30 dias da sua tela de forma automática sem precisar mandar comprovante!)* 🚀📺`;
+      
       try {
-        await fetch(targetUrl, {
+        // 1. Send QR Code Image first via sendMedia
+        await fetch(`${cleanBase}/message/sendMedia/${body.evolutionInstance}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
-          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: copyMsg })
+          body: JSON.stringify({
+            number: targetNumber,
+            mediatype: 'image',
+            mimetype: 'image/png',
+            caption: '📷 *SEU QR CODE PIX MERCADO PAGO* (Escaneie com a câmera ou copie o código abaixo):',
+            media: qrUrl
+          })
         });
-        console.log(`[Evolution API v2.3.7] Copia e Cola disparado com sucesso para ${body.phone}!`);
+
+        // 2. Send Copia e Cola formatted text
+        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: targetNumber, text: copyMsg })
+        });
+        console.log(`[Evolution API v2.3.7] QR Code Imagem + Copia e Cola disparados para ${body.phone}!`);
       } catch (err) {
         console.error('[Evolution API Copy & Paste Error]:', err.message);
       }
@@ -282,6 +298,22 @@ const server = http.createServer(async (req, res) => {
 
     const renewalMessage = `🎉 *PAGAMENTO APROVADO E TELA RENOVADA AUTOMATICAMENTE!* 🎉\n\nOlá, *${body.clientName || 'Cliente'}*! Confirmamos o pagamento PIX de *R$ ${body.price || '30,00'}* via Mercado Pago.\n\n✅ *Sua assinatura na Guma TV (${body.username}) acabou de ser renovada por +30 dias direto no nosso sistema!*\n\nAproveite sua programação sem cortes! 🚀📺`;
     console.log(`[WhatsApp Guma Notification] Enviando mensagem de confirmação de renovação para ${body.phone}...`);
+
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance && body.phone) {
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      try {
+        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: renewalMessage })
+        });
+        console.log(`[Evolution API v2.3.7] Notificação de renovação automática enviada com sucesso para ${body.phone}!`);
+      } catch (err) {
+        console.error('[Evolution API Renewal Notification Error]:', err.message);
+      }
+    }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({

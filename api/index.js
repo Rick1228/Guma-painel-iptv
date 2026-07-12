@@ -177,13 +177,27 @@ module.exports = async (req, res) => {
       let cleanBase = body.evolutionUrl.replace(/\/$/, '');
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
-      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
+      const targetNumber = body.phone.replace(/[^0-9]/g, '');
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCopyPaste)}`;
       const copyMsg = `⚡ *AQUI ESTÁ SEU CÓDIGO PIX COPIA E COLA (MERCADO PAGO)* ⚡\n\n${pixCopyPaste}\n\n*(Assim que você realizar o pagamento no aplicativo do seu banco, nosso sistema WPlay identifica o PIX instantaneamente e renova +30 dias da sua tela de forma automática sem precisar mandar comprovante!)* 🚀📺`;
+      
       try {
-        await fetch(targetUrl, {
+        await fetch(`${cleanBase}/message/sendMedia/${body.evolutionInstance}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
-          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: copyMsg })
+          body: JSON.stringify({
+            number: targetNumber,
+            mediatype: 'image',
+            mimetype: 'image/png',
+            caption: '📷 *SEU QR CODE PIX MERCADO PAGO* (Escaneie com a câmera ou copie o código abaixo):',
+            media: qrUrl
+          })
+        });
+
+        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: targetNumber, text: copyMsg })
         });
       } catch (err) {
         console.error('[Evolution API Copy & Paste Vercel Error]:', err.message);
@@ -209,6 +223,21 @@ module.exports = async (req, res) => {
     }
 
     const renewalMessage = `🎉 *PAGAMENTO APROVADO E TELA RENOVADA AUTOMATICAMENTE!* 🎉\n\nOlá, *${body.clientName || 'Cliente'}*! Confirmamos o pagamento PIX de *R$ ${body.price || '30,00'}* via Mercado Pago.\n\n✅ *Sua assinatura na Guma TV (${body.username}) acabou de ser renovada por +30 dias direto no nosso sistema!*\n\nAproveite sua programação sem cortes! 🚀📺`;
+
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance && body.phone) {
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      try {
+        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: renewalMessage })
+        });
+      } catch (err) {
+        console.error('[Evolution API Renewal Vercel Error]:', err.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,

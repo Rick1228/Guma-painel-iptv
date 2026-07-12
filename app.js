@@ -861,6 +861,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Open Modal
     document.getElementById('pix-modal').classList.add('active');
+
+    // Start 100% automatic verification loop every 5 seconds (no clicks needed)
+    if (window.pixAutoCheckInterval) clearInterval(window.pixAutoCheckInterval);
+    window.pixAutoCheckInterval = setInterval(async () => {
+      const modal = document.getElementById('pix-modal');
+      if (!modal || !modal.classList.contains('active')) {
+        if (window.pixAutoCheckInterval) clearInterval(window.pixAutoCheckInterval);
+        return;
+      }
+      const userId = document.getElementById('pix-client-id').value;
+      const username = document.getElementById('pix-client-username').value;
+      const clientName = document.getElementById('pix-modal-name').textContent;
+      const price = document.getElementById('pix-client-price').value;
+      const phoneRaw = document.getElementById('pix-client-phone').value;
+      const phone = phoneRaw.replace(/[^0-9]/g, '');
+
+      if (userId && username) {
+        try {
+          const res = await fetch('/api/whatsapp/check-pix-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              username,
+              clientName,
+              price,
+              phone,
+              evolutionUrl: localStorage.getItem('evolution_api_url') || '',
+              evolutionInstance: localStorage.getItem('evolution_instance_name') || 'Guma',
+              evolutionApiKey: localStorage.getItem('evolution_api_key') || '897A83EF68D7-4A24-B1AE-9727CD019020'
+            })
+          });
+          const data = await res.json();
+          if (data.success && data.paid) {
+            if (window.pixAutoCheckInterval) clearInterval(window.pixAutoCheckInterval);
+            const statusBox = document.getElementById('pix-payment-status-box');
+            if (statusBox) {
+              statusBox.style.background = 'rgba(16, 185, 129, 0.25)';
+              statusBox.style.border = '2px solid #25d366';
+              statusBox.innerHTML = `
+                <div style="font-size: 0.95rem; font-weight: 800; color: #25d366; margin-bottom: 8px;">
+                  <i class="fa-solid fa-check-double"></i> PAGAMENTO APROVADO & RENOVAÇÃO EFETUADA AUTOMATICAMENTE!
+                </div>
+                <div style="font-size: 0.8rem; color: #fff; margin-bottom: 12px;">
+                  A assinatura de <strong>${clientName} (${username})</strong> foi estendida em <strong>+30 dias</strong> na WPlay API e o cliente foi notificado no WhatsApp da Guma!
+                </div>
+                <button class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="document.getElementById('pix-modal').classList.remove('active')">
+                  <i class="fa-solid fa-thumbs-up"></i> Concluir & Atualizar Tabela
+                </button>
+              `;
+            }
+            showToast(`✅ Pagamento PIX de ${clientName} detectado pelo sistema! +30 dias renovados automaticamente!`, 'success');
+            setTimeout(() => syncUsersFromWPlayApi(), 1200);
+          }
+        } catch (err) {}
+      }
+    }, 5000);
   };
 
   // Button 1: Send WhatsApp notice (with interactive button to generate QR Code via connected WhatsApp)
@@ -1025,7 +1082,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/whatsapp/check-pix-status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, username, clientName, price, phone })
+          body: JSON.stringify({
+            userId,
+            username,
+            clientName,
+            price,
+            phone,
+            evolutionUrl: localStorage.getItem('evolution_api_url') || '',
+            evolutionInstance: localStorage.getItem('evolution_instance_name') || 'Guma',
+            evolutionApiKey: localStorage.getItem('evolution_api_key') || '897A83EF68D7-4A24-B1AE-9727CD019020'
+          })
         });
         const data = await res.json();
 
