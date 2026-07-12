@@ -3,41 +3,50 @@ const https = require('https');
 
 // WPlay API Configuration
 let WPLAY_API_KEY = process.env.WPLAY_TOKEN || 'wz_d5dc6ad7b3056b60f1f008c20f9aed79';
-const WPLAY_BASE_URL = 'http://mcapi.knewcms.com:2087';
+const WPLAY_BASE_URL = 'https://mcapi.knewcms.com:2087';
 
 async function callWPlayApi(endpoint, method = 'GET', body = null) {
   try {
-    const url = new URL(endpoint, WPLAY_BASE_URL).toString();
-    const options = {
-      method: method,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${WPLAY_API_KEY}`,
-        'X-API-Key': WPLAY_API_KEY
-      }
+    const urlStr = new URL(endpoint, WPLAY_BASE_URL).toString();
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${WPLAY_API_KEY}`,
+      'X-API-Key': WPLAY_API_KEY
     };
-    if (body) options.body = typeof body === 'string' ? body : JSON.stringify(body);
 
-    // 8s timeout to prevent Vercel Serverless Function hanging
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    options.signal = controller.signal;
-
-    const res = await fetch(url, options);
-    clearTimeout(timeout);
-
-    const text = await res.text();
-    let parsed;
-    try { parsed = JSON.parse(text); } catch (e) { parsed = text; }
-    return { status: res.status, data: parsed, ok: res.ok };
+    if (typeof fetch !== 'undefined') {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const options = { method, headers, signal: controller.signal };
+      if (body) options.body = typeof body === 'string' ? body : JSON.stringify(body);
+      const res = await fetch(urlStr, options);
+      clearTimeout(timeout);
+      const text = await res.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch (e) { parsed = text; }
+      return { status: res.status, data: parsed, ok: res.ok };
+    } else {
+      return new Promise((resolve) => {
+        const urlObj = new URL(urlStr);
+        const req = https.request(urlObj, { method, headers, timeout: 8000 }, (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            let parsed;
+            try { parsed = JSON.parse(data); } catch (e) { parsed = data; }
+            resolve({ status: res.statusCode, data: parsed, ok: res.statusCode >= 200 && res.statusCode < 300 });
+          });
+        });
+        req.on('error', (err) => resolve({ status: 500, data: { error: err.message }, ok: false }));
+        req.on('timeout', () => { req.destroy(); resolve({ status: 504, data: { error: 'Timeout' }, ok: false }); });
+        if (body) req.write(typeof body === 'string' ? body : JSON.stringify(body));
+        req.end();
+      });
+    }
   } catch (err) {
     console.error('[Vercel WPlay Bridge Error]:', err.message);
-    return { 
-      status: 500, 
-      data: { error: 'Falha na comunicação entre Vercel e o servidor WPlay API', details: err.message }, 
-      ok: false 
-    };
+    return { status: 500, data: { error: 'Falha na comunicação com WPlay API', details: err.message }, ok: false };
   }
 }
 
