@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
     // Instant diagnostic ping endpoint (no external WPlay call)
-    if (pathname.includes('/ping') || pathname.includes('/test-vercel')) {
+    if (pathname.includes('/ping') || pathname.includes('/health') || pathname.includes('/test-vercel')) {
       return res.status(200).json({ status: 'ok', vercel_bridge: 'active', time: Date.now() });
     }
 
