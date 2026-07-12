@@ -975,7 +975,15 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetch('/api/whatsapp/auto-reply-pix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, username, price, clientName: name })
+          body: JSON.stringify({
+            phone,
+            username,
+            price,
+            clientName: name,
+            evolutionUrl: localStorage.getItem('evolution_api_url') || '',
+            evolutionInstance: localStorage.getItem('evolution_instance_name') || 'Guma',
+            evolutionApiKey: localStorage.getItem('evolution_api_key') || '897A83EF68D7-4A24-B1AE-9727CD019020'
+          })
         });
       } catch (err) {
         console.log('[Automation Bridge Log]: QR Code e Copia e Cola enviados');

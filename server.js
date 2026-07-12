@@ -244,12 +244,14 @@ const server = http.createServer(async (req, res) => {
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
       const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
+      const copyMsg = `⚡ *AQUI ESTÁ SEU CÓDIGO PIX COPIA E COLA (MERCADO PAGO)* ⚡\n\n${pixCopyPaste}\n\n*(Assim que você realizar o pagamento no aplicativo do seu banco, nosso sistema WPlay identifica o PIX instantaneamente e renova +30 dias da sua tela de forma automática sem precisar mandar comprovante!)* 🚀📺`;
       try {
         await fetch(targetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
-          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: pixCopyPaste })
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: copyMsg })
         });
+        console.log(`[Evolution API v2.3.7] Copia e Cola disparado com sucesso para ${body.phone}!`);
       } catch (err) {
         console.error('[Evolution API Copy & Paste Error]:', err.message);
       }
