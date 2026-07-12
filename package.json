@@ -1,0 +1,14 @@
+{
+  "name": "guma-painel-iptv",
+  "version": "1.0.0",
+  "description": "Painel WPlay Guma TV & Automação WhatsApp Web API",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
