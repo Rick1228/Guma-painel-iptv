@@ -1074,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('evolution-api-key')) document.getElementById('evolution-api-key').value = savedKey;
 
     saveGumaWhatsappBtn.addEventListener('click', () => {
-      const urlVal = (document.getElementById('evolution-api-url')?.value || '').trim();
+      let urlVal = (document.getElementById('evolution-api-url')?.value || '').trim();
       const instVal = (document.getElementById('evolution-instance-name')?.value || 'Guma').trim();
       const keyVal = (document.getElementById('evolution-api-key')?.value || '').trim();
 
@@ -1083,12 +1083,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Auto-clean Railway / Manager / Dashboard path so exact API base URL is stored
+      urlVal = urlVal.replace(/\/$/, '');
+      if (urlVal.includes('/manager')) urlVal = urlVal.split('/manager')[0];
+      if (urlVal.includes('/dashboard')) urlVal = urlVal.split('/dashboard')[0];
+      if (document.getElementById('evolution-api-url')) document.getElementById('evolution-api-url').value = urlVal;
+
       localStorage.setItem('evolution_api_url', urlVal);
       localStorage.setItem('evolution_instance_name', instVal);
       localStorage.setItem('evolution_api_key', keyVal);
       localStorage.setItem('guma_whatsapp_api_token', keyVal);
 
-      showToast(`✅ Instância Evolution '${instVal}' sincronizada e pronta para disparos!`, 'success');
+      showToast(`✅ Instância Evolution '${instVal}' sincronizada (${urlVal})!`, 'success');
     });
   }
 

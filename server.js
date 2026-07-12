@@ -188,7 +188,10 @@ const server = http.createServer(async (req, res) => {
     
     // Real dispatch via Evolution API v2.3.7 if connected
     if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
-      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
       const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
       try {
         await fetch(targetUrl, {
@@ -196,7 +199,7 @@ const server = http.createServer(async (req, res) => {
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
           body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: textMsg })
         });
-        console.log(`[Evolution API v2.3.7] Mensagem disparada com sucesso para ${body.phone}!`);
+        console.log(`[Evolution API v2.3.7] Mensagem disparada com sucesso para ${body.phone}! (${targetUrl})`);
       } catch (err) {
         console.error('[Evolution API Dispatch Error]:', err.message);
       }
@@ -222,7 +225,10 @@ const server = http.createServer(async (req, res) => {
 
     // Real dispatch copy & paste code via Evolution API v2.3.7 if connected
     if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
-      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
       try {
         await fetch(targetUrl, {
           method: 'POST',

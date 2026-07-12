@@ -131,7 +131,10 @@ module.exports = async (req, res) => {
   // 8. Automated WhatsApp Dispatch with Interactive Buttons (QR Code & Copia e Cola)
   if (pathname.includes('/whatsapp/send-automation') && req.method === 'POST') {
     if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
-      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
       const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
       try {
         await fetch(targetUrl, {
@@ -159,7 +162,10 @@ module.exports = async (req, res) => {
     const pixCopyPaste = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${priceClean}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${(body.username || 'GUMATV').toUpperCase()}6304E8A1`;
 
     if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
-      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      let cleanBase = body.evolutionUrl.replace(/\/$/, '');
+      if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
+      if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
+      const targetUrl = `${cleanBase}/message/sendText/${body.evolutionInstance}`;
       try {
         await fetch(targetUrl, {
           method: 'POST',
