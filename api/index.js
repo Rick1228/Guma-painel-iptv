@@ -6,8 +6,8 @@ let WPLAY_API_KEY = process.env.WPLAY_TOKEN || 'wz_d5dc6ad7b3056b60f1f008c20f9ae
 const WPLAY_BASE_URL = 'http://mcapi.knewcms.com:2087';
 
 async function callWPlayApi(endpoint, method = 'GET', body = null) {
-  return new Promise((resolve) => {
-    const url = new URL(endpoint, WPLAY_BASE_URL);
+  try {
+    const url = new URL(endpoint, WPLAY_BASE_URL).toString();
     const options = {
       method: method,
       headers: {
@@ -17,57 +17,57 @@ async function callWPlayApi(endpoint, method = 'GET', body = null) {
         'X-API-Key': WPLAY_API_KEY
       }
     };
+    if (body) options.body = typeof body === 'string' ? body : JSON.stringify(body);
 
-    const req = http.request(url, options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve({ status: res.statusCode, data: parsed, ok: res.statusCode >= 200 && res.statusCode < 300 });
-        } catch (e) {
-          resolve({ status: res.statusCode, data: data, ok: res.statusCode >= 200 && res.statusCode < 300 });
-        }
-      });
-    });
+    // 8s timeout to prevent Vercel Serverless Function hanging
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    options.signal = controller.signal;
 
-    req.on('error', (err) => {
-      console.error('[Vercel WPlay Bridge Error]:', err.message);
-      resolve({ status: 500, data: { error: 'Failed to connect to official WPlay API server', details: err.message }, ok: false });
-    });
+    const res = await fetch(url, options);
+    clearTimeout(timeout);
 
-    if (body) {
-      req.write(typeof body === 'string' ? body : JSON.stringify(body));
-    }
-    req.end();
-  });
+    const text = await res.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (e) { parsed = text; }
+    return { status: res.status, data: parsed, ok: res.ok };
+  } catch (err) {
+    console.error('[Vercel WPlay Bridge Error]:', err.message);
+    return { 
+      status: 500, 
+      data: { error: 'Falha na comunicação entre Vercel e o servidor WPlay API', details: err.message }, 
+      ok: false 
+    };
+  }
 }
 
 module.exports = async (req, res) => {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+  try {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
 
-  const pathname = req.url ? req.url.split('?')[0] : '';
-  const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const pathname = req.url ? req.url.split('?')[0] : '';
+    const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
-  // Helper to read body if not parsed
-  let body = req.body;
-  if (!body && (req.method === 'POST' || req.method === 'PUT')) {
-    body = await new Promise((resolve) => {
-      let data = '';
-      req.on('data', chunk => data += chunk);
-      req.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch(e) { resolve(data); }
+    // Helper to read body if not parsed
+    let body = req.body;
+    if (!body && (req.method === 'POST' || req.method === 'PUT')) {
+      body = await new Promise((resolve) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('error', err => resolve({}));
+        req.on('end', () => {
+          try { resolve(JSON.parse(data)); } catch(e) { resolve(data || {}); }
+        });
       });
-    });
-  }
+    }
 
   // 1. Set Token Endpoint
   if (pathname.includes('/set-token') && req.method === 'POST') {
@@ -330,5 +330,14 @@ module.exports = async (req, res) => {
     return res.status(200).json({ success: true });
   }
 
-  return res.status(404).json({ error: 'Endpoint WPlay não encontrado no Vercel Bridge', path: pathname });
+    return res.status(404).json({ error: 'Endpoint WPlay não encontrado no Vercel Bridge', path: pathname });
+  } catch (globalError) {
+    console.error('[Vercel Global Handler Crash Prevented]:', globalError);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: 'Erro interno no Servidor Vercel Bridge',
+        message: globalError.message || String(globalError)
+      });
+    }
+  }
 };
