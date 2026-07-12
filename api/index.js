@@ -17,7 +17,7 @@ async function callWPlayApi(endpoint, method = 'GET', body = null) {
 
     if (typeof fetch !== 'undefined') {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+      const timeout = setTimeout(() => controller.abort(), 3500);
       const options = { method, headers, signal: controller.signal };
       if (body) options.body = typeof body === 'string' ? body : JSON.stringify(body);
       const res = await fetch(urlStr, options);
@@ -29,7 +29,7 @@ async function callWPlayApi(endpoint, method = 'GET', body = null) {
     } else {
       return new Promise((resolve) => {
         const urlObj = new URL(urlStr);
-        const req = https.request(urlObj, { method, headers, timeout: 8000 }, (res) => {
+        const req = https.request(urlObj, { method, headers, timeout: 3500 }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
           res.on('end', () => {
@@ -64,6 +64,11 @@ module.exports = async (req, res) => {
 
     const pathname = req.url ? req.url.split('?')[0] : '';
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+
+    // Instant diagnostic ping endpoint (no external WPlay call)
+    if (pathname.includes('/ping') || pathname.includes('/test-vercel')) {
+      return res.status(200).json({ status: 'ok', vercel_bridge: 'active', time: Date.now() });
+    }
 
     // Helper to read body if not parsed
     let body = req.body;
