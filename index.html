@@ -462,19 +462,30 @@
               <span class="badge badge-active" id="whatsapp-guma-badge" style="font-size: 0.88rem; padding: 8px 16px; background: rgba(37, 211, 102, 0.2); color: #25d366; border: 1px solid #25d366;"><i class="fa-solid fa-check"></i> WHATSAPP PRONTO</span>
             </div>
 
+            <div class="form-row" style="margin-bottom: 16px;">
+              <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                <label class="form-label">URL do Servidor Evolution API (v2.3.7)</label>
+                <input type="text" class="form-input" id="evolution-api-url" placeholder="https://api.evolution.seuservidor.com ou http://localhost:8080">
+              </div>
+              <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label class="form-label">Nome da Instância</label>
+                <input type="text" class="form-input mono-text" id="evolution-instance-name" placeholder="Guma" value="Guma">
+              </div>
+            </div>
+
             <div class="form-row" style="align-items: flex-end;">
               <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                <label class="form-label">Número do WhatsApp Guma TV (que enviará as cobranças PIX)</label>
-                <input type="text" class="form-input" id="guma-whatsapp-input" placeholder="+55 11 99999-9999" value="+55 11 99999-9999">
+                <label class="form-label">API Key / Token da Instância (Global or Instance apikey)</label>
+                <input type="password" class="form-input mono-text" id="evolution-api-key" placeholder="897A83EF68D7-4A24-B1AE-9727CD019020" value="897A83EF68D7-4A24-B1AE-9727CD019020">
               </div>
               <div class="form-group" style="flex: 1; margin-bottom: 0;">
                 <button type="button" class="btn btn-emerald" style="width: 100%; background: #25d366; border-color: #25d366;" id="save-guma-whatsapp-btn">
-                  <i class="fa-solid fa-qrcode"></i> Sincronizar Instância WhatsApp Guma
+                  <i class="fa-solid fa-rotate-right"></i> Sincronizar Instância Evolution API
                 </button>
               </div>
             </div>
             <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-robot" style="color: #25d366;"></i> <span>Quando um cliente estiver preste a vencer, a instância conectada enviará o aviso e disponibilizará o botão de geração de PIX diretamente ao cliente.</span>
+              <i class="fa-solid fa-robot" style="color: #25d366;"></i> <span>Instância conectada na Evolution API v2.3.7! Disparará as cobranças PIX e respostas automáticas sem abrir abas extras.</span>
             </div>
           </div>
 

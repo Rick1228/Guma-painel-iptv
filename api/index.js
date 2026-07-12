@@ -130,9 +130,23 @@ module.exports = async (req, res) => {
 
   // 8. Automated WhatsApp Dispatch with Interactive Buttons (QR Code & Copia e Cola)
   if (pathname.includes('/whatsapp/send-automation') && req.method === 'POST') {
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
+      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
+      try {
+        await fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: textMsg })
+        });
+      } catch (err) {
+        console.error('[Evolution API Vercel Dispatch Error]:', err.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      message: 'Disparo interativo enviado pela instância Guma WhatsApp com botão [⚡ Gerar QR Code PIX]!',
+      message: 'Disparo interativo enviado pela instância Guma WhatsApp!',
       dispatched_buttons: [
         { id: 'btn_gerar_pix', label: '⚡ Gerar QR Code PIX Mercado Pago' }
       ]
@@ -143,6 +157,19 @@ module.exports = async (req, res) => {
   if (pathname.includes('/whatsapp/auto-reply-pix') && req.method === 'POST') {
     const priceClean = (body.price || '30.00').replace(',', '.');
     const pixCopyPaste = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${priceClean}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${(body.username || 'GUMATV').toUpperCase()}6304E8A1`;
+
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
+      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      try {
+        await fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: pixCopyPaste })
+        });
+      } catch (err) {
+        console.error('[Evolution API Copy & Paste Vercel Error]:', err.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,

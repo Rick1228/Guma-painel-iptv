@@ -893,6 +893,9 @@ document.addEventListener('DOMContentLoaded', () => {
             username: username,
             plan: plan,
             price: price,
+            evolutionUrl: localStorage.getItem('evolution_api_url') || '',
+            evolutionInstance: localStorage.getItem('evolution_instance_name') || 'Guma',
+            evolutionApiKey: localStorage.getItem('evolution_api_key') || '897A83EF68D7-4A24-B1AE-9727CD019020',
             buttons: [
               { id: 'gerar_pix', label: '⚡ Gerar QR Code PIX' }
             ]
@@ -1058,22 +1061,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Save official Guma TV WhatsApp logic
+  // Save official Guma TV Evolution API logic
   const saveGumaWhatsappBtn = document.getElementById('save-guma-whatsapp-btn');
-  const gumaWhatsappInput = document.getElementById('guma-whatsapp-input');
-  if (saveGumaWhatsappBtn && gumaWhatsappInput) {
-    // Load saved number
-    const savedPhone = localStorage.getItem('guma_whatsapp_number');
-    if (savedPhone) gumaWhatsappInput.value = savedPhone;
+  if (saveGumaWhatsappBtn) {
+    // Load saved settings
+    const savedUrl = localStorage.getItem('evolution_api_url');
+    const savedInst = localStorage.getItem('evolution_instance_name') || 'Guma';
+    const savedKey = localStorage.getItem('evolution_api_key') || '897A83EF68D7-4A24-B1AE-9727CD019020';
+
+    if (document.getElementById('evolution-api-url') && savedUrl) document.getElementById('evolution-api-url').value = savedUrl;
+    if (document.getElementById('evolution-instance-name')) document.getElementById('evolution-instance-name').value = savedInst;
+    if (document.getElementById('evolution-api-key')) document.getElementById('evolution-api-key').value = savedKey;
 
     saveGumaWhatsappBtn.addEventListener('click', () => {
-      const val = gumaWhatsappInput.value.trim();
-      if (!val) {
-        showToast('Por favor, informe o número do WhatsApp da Guma TV!', 'error');
+      const urlVal = (document.getElementById('evolution-api-url')?.value || '').trim();
+      const instVal = (document.getElementById('evolution-instance-name')?.value || 'Guma').trim();
+      const keyVal = (document.getElementById('evolution-api-key')?.value || '').trim();
+
+      if (!urlVal || !keyVal) {
+        showToast('Por favor, informe a URL do Servidor e a API Key da Evolution API!', 'error');
         return;
       }
-      localStorage.setItem('guma_whatsapp_number', val);
-      showToast(`Instância do WhatsApp sincronizada com o número ${val}!`, 'success');
+
+      localStorage.setItem('evolution_api_url', urlVal);
+      localStorage.setItem('evolution_instance_name', instVal);
+      localStorage.setItem('evolution_api_key', keyVal);
+      localStorage.setItem('guma_whatsapp_api_token', keyVal);
+
+      showToast(`✅ Instância Evolution '${instVal}' sincronizada e pronta para disparos!`, 'success');
     });
   }
 

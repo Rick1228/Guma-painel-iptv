@@ -184,12 +184,28 @@ const server = http.createServer(async (req, res) => {
   // 9. Automated WhatsApp Dispatch with Interactive Buttons (QR Code & Copia e Cola)
   if (pathname === '/api/whatsapp/send-automation' && req.method === 'POST') {
     const body = await readBody();
-    console.log(`[WhatsApp Guma Automation] Disparando aviso com botão interativo para ${body.phone}:`, body);
+    console.log(`[WhatsApp Guma Automation] Disparando aviso para ${body.phone}:`, body);
     
+    // Real dispatch via Evolution API v2.3.7 if connected
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
+      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e receber seu PIX agora:\n\n👉 Responda esta mensagem com a palavra *GERAR PIX* (ou o número *1*) para receber seu código Copia e Cola na hora! 🚀`;
+      try {
+        await fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: textMsg })
+        });
+        console.log(`[Evolution API v2.3.7] Mensagem disparada com sucesso para ${body.phone}!`);
+      } catch (err) {
+        console.error('[Evolution API Dispatch Error]:', err.message);
+      }
+    }
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
       success: true,
-      message: 'Disparo interativo enviado pela instância Guma WhatsApp com botão [⚡ Gerar QR Code PIX]!',
+      message: 'Disparo interativo enviado pela instância Guma WhatsApp!',
       dispatched_buttons: [
         { id: 'btn_gerar_pix', label: '⚡ Gerar QR Code PIX Mercado Pago' }
       ]
@@ -199,10 +215,24 @@ const server = http.createServer(async (req, res) => {
   // 10. Auto-Reply when user clicks [⚡ Gerar QR Code PIX] button on WhatsApp
   if (pathname === '/api/whatsapp/auto-reply-pix' && req.method === 'POST') {
     const body = await readBody();
-    console.log(`[WhatsApp Guma Auto-Reply] Cliente ${body.phone} clicou em GERAR PIX. Enviando QR Code Mercado Pago...`, body);
+    console.log(`[WhatsApp Guma Auto-Reply] Cliente ${body.phone} solicitou PIX. Enviando QR Code Mercado Pago...`, body);
 
     const priceClean = (body.price || '30.00').replace(',', '.');
     const pixCopyPaste = `00020126580014br.gov.bcb.pix0136guma.pix@wplay.com5204000053039865405${priceClean}5802BR5908GUMA TV6009SAO PAULO62170513GUMA${(body.username || 'GUMATV').toUpperCase()}6304E8A1`;
+
+    // Real dispatch copy & paste code via Evolution API v2.3.7 if connected
+    if (body.evolutionUrl && body.evolutionApiKey && body.evolutionInstance) {
+      const targetUrl = `${body.evolutionUrl.replace(/\/$/, '')}/message/sendText/${body.evolutionInstance}`;
+      try {
+        await fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
+          body: JSON.stringify({ number: body.phone.replace(/[^0-9]/g, ''), text: pixCopyPaste })
+        });
+      } catch (err) {
+        console.error('[Evolution API Copy & Paste Error]:', err.message);
+      }
+    }
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
