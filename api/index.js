@@ -223,6 +223,16 @@ module.exports = async (req, res) => {
 
   // 10. Check Mercado Pago PIX Payment Status & Automatically Renew on WPlay API
   if (pathname.includes('/whatsapp/check-pix-status') && req.method === 'POST') {
+    // GUARD: Never renew or deduct WPlay credits unless explicitly triggered by manual verification or real approved payment webhook
+    if (body.action !== 'manual_verify_renew' && body.action !== 'mercadopago_approved') {
+      return res.status(200).json({
+        success: true,
+        paid: false,
+        renewed: false,
+        message: 'Aguardando confirmação bancária do PIX no Mercado Pago...'
+      });
+    }
+
     let renewResult = { ok: true, data: { status: 'Ativo', message: 'Assinatura renovada por +30 dias via API oficial' } };
     if (body.userId && body.userId !== 'undefined') {
       renewResult = await callWPlayApi(`/lines/v2/extend/${body.userId}`, 'PATCH', { months: 1 });
