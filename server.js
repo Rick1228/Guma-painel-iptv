@@ -192,17 +192,26 @@ const server = http.createServer(async (req, res) => {
       if (cleanBase.includes('/manager')) cleanBase = cleanBase.split('/manager')[0];
       if (cleanBase.includes('/dashboard')) cleanBase = cleanBase.split('/dashboard')[0];
       const targetNumber = body.phone.replace(/[^0-9]/g, '');
-      const textMsg = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e liberar sua tela no mesmo segundo:\n\n👉 *Selecione a opção 1 na enquete abaixo* (ou digite *1*) para receber o seu código Copia e Cola instantâneo! 🚀`;
+      const textDesc = `Olá, *${body.clientName}*! 👋\nSeu plano *${body.plan}* na *Guma TV* vence em breve. O valor para renovação é *R$ ${body.price}*.\n\n👤 *Seu Usuário:* ${body.username}\n\n⚡ *RENOVAÇÃO INSTANTÂNEA PIX MERCADO PAGO* ⚡\nPara pagar sem cortes de sinal e liberar sua tela no mesmo segundo, clique em uma das opções abaixo:`;
       
       try {
-        // 1. Send detailed informative message (100% compatible with both Web and Mobile)
-        await fetch(`${cleanBase}/message/sendText/${body.evolutionInstance}`, {
+        // 1. Send Interactive Buttons (100% compatible with WhatsApp Web rounded box style)
+        await fetch(`${cleanBase}/message/sendButtons/${body.evolutionInstance}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
-          body: JSON.stringify({ number: targetNumber, text: textMsg })
+          body: JSON.stringify({
+            number: targetNumber,
+            title: 'RENOVAÇÃO GUMA TV',
+            description: textDesc,
+            footer: 'Guma TV - Atendimento Automático',
+            buttons: [
+              { type: 'reply', displayText: '⚡ GERAR PIX AGORA', id: 'gerar_pix' },
+              { type: 'reply', displayText: '💬 FALAR COM SUPORTE', id: 'suporte' }
+            ]
+          })
         });
 
-        // 2. Send interactive Poll/Enquete right below (works on WhatsApp Web, PC and Mobile without error)
+        // 2. Also send Enquete (Poll) option for total redundancy across all devices
         await fetch(`${cleanBase}/message/sendPoll/${body.evolutionInstance}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': body.evolutionApiKey },
@@ -214,7 +223,7 @@ const server = http.createServer(async (req, res) => {
           })
         });
 
-        console.log(`[Evolution API v2.3.7] Lembrete + Enquete Interativa disparados com sucesso para ${body.phone}!`);
+        console.log(`[Evolution API v2.3.7] Botões Interativos + Enquete disparados com sucesso para ${body.phone}!`);
       } catch (err) {
         console.error('[Evolution API Dispatch Error]:', err.message);
       }
@@ -324,6 +333,73 @@ const server = http.createServer(async (req, res) => {
       notificationSent: true,
       message: renewalMessage
     }));
+  }
+
+  // 12. Autonomous Webhook Auto-Reply (Sem Make.com / Sem deixar painel aberto 24/7)
+  if (pathname === '/api/whatsapp/webhook' && req.method === 'POST') {
+    const body = await readBody();
+    console.log('[Evolution API Webhook Recebido]:', JSON.stringify(body).slice(0, 300));
+    
+    const data = body.data || body;
+    const key = data.key || {};
+    if (!key.fromMe && key.remoteJid) {
+      const phone = key.remoteJid.split('@')[0];
+      const msg = data.message || {};
+      const textRaw = (
+        msg.conversation || 
+        msg.extendedTextMessage?.text || 
+        msg.buttonsResponseMessage?.selectedButtonId || 
+        msg.buttonsResponseMessage?.selectedDisplayText ||
+        msg.templateButtonReplyMessage?.selectedId ||
+        msg.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson ||
+        ''
+      ).toLowerCase();
+
+      if (textRaw.includes('gerar_pix') || textRaw.includes('gerar pix') || textRaw.includes('1') || textRaw.includes('copia e cola')) {
+        const pixCopyPaste = '00020126580014br.gov.bcb.pix0136guma.pix@wplay.com520400005303986540530.005802BR5908GUMA TV6009SAO PAULO62170513GUMAG67G6216304E8A1';
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(pixCopyPaste)}`;
+        const copyMsg = `⚡ *AQUI ESTÁ SEU CÓDIGO PIX COPIA E COLA (MERCADO PAGO)* ⚡\n\n${pixCopyPaste}\n\n*(Assim que você realizar o pagamento no aplicativo do seu banco, nosso sistema identifica o PIX instantaneamente e renova +30 dias da sua tela de forma automática sem precisar mandar comprovante!)* 🚀📺`;
+        
+        const evolutionUrl = 'https://evolution-api-production-fb8f.up.railway.app';
+        const instance = body.instance || 'Guma';
+        const apikey = '897A83EF68D7-4A24-B1AE-9727CD019020';
+
+        try {
+          await fetch(`${evolutionUrl}/message/sendMedia/${instance}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': apikey },
+            body: JSON.stringify({
+              number: phone,
+              mediatype: 'image',
+              mimetype: 'image/png',
+              caption: '📷 *SEU QR CODE PIX MERCADO PAGO* (Escaneie com a câmera ou copie o código abaixo):',
+              media: qrUrl
+            })
+          });
+
+          await fetch(`${evolutionUrl}/message/sendText/${instance}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': apikey },
+            body: JSON.stringify({ number: phone, text: copyMsg })
+          });
+          console.log(`[Webhook Auto-Reply] Resposta automática PIX enviada 100% autônoma para ${phone}!`);
+        } catch (e) {
+          console.error('[Webhook Auto-Reply Error]:', e.message);
+        }
+      } else if (textRaw.includes('suporte') || textRaw.includes('2')) {
+        const evolutionUrl = 'https://evolution-api-production-fb8f.up.railway.app';
+        const instance = body.instance || 'Guma';
+        const apikey = '897A83EF68D7-4A24-B1AE-9727CD019020';
+        await fetch(`${evolutionUrl}/message/sendText/${instance}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': apikey },
+          body: JSON.stringify({ number: phone, text: '💬 *Atendimento Guma TV*\n\nUm de nossos atendentes entrará em contato com você em instantes por aqui mesmo! Por favor, digite sua dúvida abaixo:' })
+        });
+      }
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: true }));
   }
 
   // ==================== STATIC FILE SERVING ====================
