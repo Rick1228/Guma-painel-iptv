@@ -55,72 +55,45 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       showToast('Sincronizando com a API oficial em tempo real...', 'info');
 
-      // ── Fetch real credits/balance from WPlay ──────────────────────────
-      try {
-        const resCredits = await fetch('/api/wplay/credits');
-        if (resCredits.ok) {
-          const creditsData = await resCredits.json();
-          console.log('[WPlay Credits raw]:', creditsData);
-          // Try multiple field names WPlay might return
-          const realCredits = creditsData.credits
-            ?? creditsData.raw?.balance
-            ?? creditsData.raw?.credits
-            ?? creditsData.raw?.saldo
-            ?? creditsData.raw?.creditos
-            ?? creditsData.raw?.total_credits
-            ?? creditsData.raw?.available_credits
-            ?? null;
-          if (realCredits !== null && !isNaN(parseFloat(realCredits))) {
-            credits = parseFloat(realCredits);
-            saveState();
-          }
-        }
-      } catch (e) { console.warn('[Credits fetch error]', e); }
-
       // ── Fetch real active users (is_trial = 0) ─────────────────────────
       const resUsers = await fetch('/api/wplay/users');
       if (resUsers.ok) {
         const dataUsers = await resUsers.json();
-        console.log('[WPlay Users raw sample]:', dataUsers[0]);
+        console.log('[WPlay Users raw sample]:', JSON.stringify(dataUsers[0]));
         if (Array.isArray(dataUsers) && dataUsers.length > 0) {
           clients = dataUsers.map(u => {
-            // Expiration — WPlay may use many field names
-            const expRaw = u.exp_date || u.expiration || u.expiration_date
-              || u.expirationDate || u.expire_date || u.valid_until
-              || u.renewal_date || u.due_date || '';
-            const cleanExp = expRaw ? expRaw.split('T')[0].split(' ')[0] : '';
+            // exp_date = "2026-07-22T02:00:00.000Z" (ISO string)
+            const cleanExp = u.exp_date ? u.exp_date.split('T')[0] : new Date().toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
 
-            // Status — WPlay can return 1/0 or 'active'/'inactive' or boolean
-            const rawStatus = u.status ?? u.active ?? u.enabled;
-            const isAtivo = rawStatus === 1 || rawStatus === true
-              || rawStatus === 'active' || rawStatus === 'Ativo'
-              || rawStatus === 'ativo' || rawStatus === 1;
+            // status = 1 (active) or 0 (inactive)
+            const isAtivo = u.status === 1 || u.status === true;
 
-            // Name — stored in notes/observation/name fields
-            const realName = u.notes || u.observation || u.obs || u.name
-              || u.customer_name || u.client_name || u.username || 'Cliente Guma';
+            // notes = client name ("Henrique", "Hercilio Camargo", etc)
+            const realName = u.notes || u.name || u.username || 'Sem Nome';
 
-            // Phone — WPlay uses phone/whatsapp/cel/phone_number
-            const phone = u.phone || u.whatsapp || u.cel || u.phone_number
-              || u.telefone || u.contact || u.mobile || '';
+            // whatsapp = "556291951111" (raw digits, no + or formatting)
+            let phone = u.whatsapp || u.phone || '';
+            if (phone && !phone.startsWith('+')) phone = '+' + phone;
 
-            // Plan name
-            const planName = u.plan?.name || u.package?.name || u.package_name
-              || u.plan_name || u.plan || u.pacote || 'Ultra 1 Krator+';
+            // plan = { id, name, credits: "1.00", days: 30, ... }
+            const planObj = typeof u.plan === 'object' ? (u.plan || {}) : {};
+            const planName = planObj.name || u.package_name || 'Ultra 1 Krator+';
+            const planCreditCost = parseFloat(planObj.credits || '1');
 
             return {
-              id: (u.id || u._id || Math.floor(100000000 + Math.random() * 900000000)).toString(),
+              id: String(u.id || u._id || Math.random()),
               name: realName,
               username: u.username || 'user',
               password: u.password || '******',
-              plan: typeof planName === 'string' ? planName : 'Ultra 1 Krator+',
-              expiration: cleanExp || today,
+              plan: planName,
+              planCreditCost,
+              expiration: cleanExp,
               whatsapp: phone,
               telegram: u.telegram || '',
               email: u.email || '',
-              status: isAtivo && (!cleanExp || cleanExp >= today) ? 'Ativo' : 'Expirado',
-              notes: u.notes || u.observation || ''
+              status: isAtivo && cleanExp >= today ? 'Ativo' : 'Expirado',
+              notes: u.notes || ''
             };
           });
         }
@@ -132,17 +105,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataTests = await resTests.json();
         if (Array.isArray(dataTests)) {
           tests = dataTests.map(t => {
-            let createdStr = t.createdAt || t.created_at
-              ? new Date(t.createdAt || t.created_at).toLocaleString('pt-BR') : '';
+            const createdStr = t.createdAt
+              ? new Date(t.createdAt).toLocaleString('pt-BR') : 'Hoje';
+            const planObj = t.plan || {};
             return {
-              id: 'TST-' + (t.id || t._id || Math.floor(10000 + Math.random() * 90000)),
+              id: 'TST-' + (t.id || t._id),
               username: t.username || 'teste',
               password: t.password || '1234',
-              plan: t.plan?.name || t.package_name || 'Ultra 1 Krator+',
-              createdAt: createdStr || 'Hoje',
+              plan: planObj.name || t.package_name || 'Ultra 1 Krator+',
+              createdAt: createdStr,
               duration: t.lastExtendPeriod ? t.lastExtendPeriod + ' Horas' : '3 Horas',
-              status: t.status === 1 || t.status === true || t.status === 'active' ? 'Ativo' : 'Expirado',
-              whatsapp: t.phone || t.whatsapp || ''
+              status: t.status === true || t.status === 1 ? 'Ativo' : 'Expirado',
+              whatsapp: t.whatsapp || t.phone || ''
             };
           });
         }
