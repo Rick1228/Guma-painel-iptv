@@ -62,8 +62,9 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const pathname = req.url ? req.url.split('?')[0] : '';
-    const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const rawUrl = req.headers['x-original-url'] || req.headers['x-matched-path'] || req.url || '/';
+    const pathname = rawUrl.split('?')[0];
+    const urlObj = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
 
     // Instant diagnostic ping endpoint (no external WPlay call)
     if (pathname.includes('/ping') || pathname.includes('/health') || pathname.includes('/test-vercel')) {
