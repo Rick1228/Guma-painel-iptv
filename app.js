@@ -709,40 +709,66 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const editUserForm = document.getElementById('edit-user-form');
+
+  async function saveEditForm() {
+    const clientId = document.getElementById('edit-user-id').value;
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const saveBtn = document.getElementById('btn-save-edit');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+    }
+
+    client.name = document.getElementById('edit-name').value;
+    client.username = document.getElementById('edit-username').value;
+    client.password = document.getElementById('edit-password').value;
+    client.whatsapp = document.getElementById('edit-whatsapp').value;
+    client.expiration = document.getElementById('edit-expiration').value;
+    client.plan = document.getElementById('edit-plan').value;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (client.expiration >= today) {
+      client.status = 'Ativo';
+    }
+
+    try {
+      await fetch(`/api/wplay/users/${clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(client)
+      });
+    } catch (err) {}
+
+    saveState();
+    renderClientsTable();
+    updateCountersAndBadges();
+    editModal.classList.remove('active');
+
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Atualizar Dados na API';
+    }
+
+    showToast(`Dados de ${client.name} atualizados com sucesso!`, 'success');
+  }
+
+  // Listen on both the form submit AND the save button click (button is outside the form)
   if (editUserForm) {
-    editUserForm.addEventListener('submit', async (e) => {
+    editUserForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const clientId = document.getElementById('edit-user-id').value;
-      const client = clients.find(c => c.id === clientId);
-      if (!client) return;
-
-      client.name = document.getElementById('edit-name').value;
-      client.username = document.getElementById('edit-username').value;
-      client.password = document.getElementById('edit-password').value;
-      client.whatsapp = document.getElementById('edit-whatsapp').value;
-      client.expiration = document.getElementById('edit-expiration').value;
-      client.plan = document.getElementById('edit-plan').value;
-
-      const today = new Date().toISOString().split('T')[0];
-      if (client.expiration >= today) {
-        client.status = 'Ativo';
-      }
-
-      try {
-        await fetch(`/api/wplay/users/${clientId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(client)
-        });
-      } catch (err) {}
-
-      saveState();
-      renderClientsTable();
-      updateCountersAndBadges();
-      editModal.classList.remove('active');
-      showToast(`Dados de ${client.name} atualizados com sucesso!`, 'success');
+      saveEditForm();
     });
   }
+  const saveEditBtn = document.getElementById('btn-save-edit');
+  if (saveEditBtn) {
+    saveEditBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      saveEditForm();
+    });
+  }
+
 
   // ==================== 12. EXTEND / RENEW EXPIRATION MODAL ====================
   const extendModal = document.getElementById('extend-modal');
