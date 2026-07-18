@@ -54,54 +54,95 @@ document.addEventListener('DOMContentLoaded', () => {
   async function syncUsersFromWPlayApi() {
     try {
       showToast('Sincronizando com a API oficial em tempo real...', 'info');
-      
-      // Fetch Real Active Users (is_trial = 0)
+
+      // ── Fetch real credits/balance from WPlay ──────────────────────────
+      try {
+        const resCredits = await fetch('/api/wplay/credits');
+        if (resCredits.ok) {
+          const creditsData = await resCredits.json();
+          console.log('[WPlay Credits raw]:', creditsData);
+          // Try multiple field names WPlay might return
+          const realCredits = creditsData.credits
+            ?? creditsData.raw?.balance
+            ?? creditsData.raw?.credits
+            ?? creditsData.raw?.saldo
+            ?? creditsData.raw?.creditos
+            ?? creditsData.raw?.total_credits
+            ?? creditsData.raw?.available_credits
+            ?? null;
+          if (realCredits !== null && !isNaN(parseFloat(realCredits))) {
+            credits = parseFloat(realCredits);
+            saveState();
+          }
+        }
+      } catch (e) { console.warn('[Credits fetch error]', e); }
+
+      // ── Fetch real active users (is_trial = 0) ─────────────────────────
       const resUsers = await fetch('/api/wplay/users');
       if (resUsers.ok) {
         const dataUsers = await resUsers.json();
-        if (Array.isArray(dataUsers)) {
-          clients = dataUsers.map(apiUser => {
-            const expStr = apiUser.exp_date || apiUser.expiration || '2026-08-01';
-            const cleanExp = expStr.split('T')[0].split(' ')[0];
+        console.log('[WPlay Users raw sample]:', dataUsers[0]);
+        if (Array.isArray(dataUsers) && dataUsers.length > 0) {
+          clients = dataUsers.map(u => {
+            // Expiration — WPlay may use many field names
+            const expRaw = u.exp_date || u.expiration || u.expiration_date
+              || u.expirationDate || u.expire_date || u.valid_until
+              || u.renewal_date || u.due_date || '';
+            const cleanExp = expRaw ? expRaw.split('T')[0].split(' ')[0] : '';
             const today = new Date().toISOString().split('T')[0];
-            const isAtivo = apiUser.status === 1 || apiUser.status === 'Ativo';
-            
-            // Note: WPlay API returns real customer name inside `notes` field or `name`
-            let realName = apiUser.notes || apiUser.name || apiUser.username || 'Cliente Guma';
-            
+
+            // Status — WPlay can return 1/0 or 'active'/'inactive' or boolean
+            const rawStatus = u.status ?? u.active ?? u.enabled;
+            const isAtivo = rawStatus === 1 || rawStatus === true
+              || rawStatus === 'active' || rawStatus === 'Ativo'
+              || rawStatus === 'ativo' || rawStatus === 1;
+
+            // Name — stored in notes/observation/name fields
+            const realName = u.notes || u.observation || u.obs || u.name
+              || u.customer_name || u.client_name || u.username || 'Cliente Guma';
+
+            // Phone — WPlay uses phone/whatsapp/cel/phone_number
+            const phone = u.phone || u.whatsapp || u.cel || u.phone_number
+              || u.telefone || u.contact || u.mobile || '';
+
+            // Plan name
+            const planName = u.plan?.name || u.package?.name || u.package_name
+              || u.plan_name || u.plan || u.pacote || 'Ultra 1 Krator+';
+
             return {
-              id: (apiUser.id || Math.floor(100000000 + Math.random() * 900000000)).toString(),
+              id: (u.id || u._id || Math.floor(100000000 + Math.random() * 900000000)).toString(),
               name: realName,
-              username: apiUser.username || 'user',
-              password: apiUser.password || '******',
-              plan: apiUser.plan?.name || apiUser.package_name || apiUser.plan || 'Ultra 1 Krator+',
-              expiration: cleanExp,
-              whatsapp: apiUser.whatsapp || apiUser.phone || '+55 11 99999-9999',
-              telegram: apiUser.telegram || '',
-              email: apiUser.email || '',
-              status: isAtivo && cleanExp >= today ? 'Ativo' : 'Expirado',
-              notes: apiUser.notes || ''
+              username: u.username || 'user',
+              password: u.password || '******',
+              plan: typeof planName === 'string' ? planName : 'Ultra 1 Krator+',
+              expiration: cleanExp || today,
+              whatsapp: phone,
+              telegram: u.telegram || '',
+              email: u.email || '',
+              status: isAtivo && (!cleanExp || cleanExp >= today) ? 'Ativo' : 'Expirado',
+              notes: u.notes || u.observation || ''
             };
           });
         }
       }
 
-      // Fetch Real Active Tests (is_trial = 1)
+      // ── Fetch real active tests (is_trial = 1) ─────────────────────────
       const resTests = await fetch('/api/wplay/tests');
       if (resTests.ok) {
         const dataTests = await resTests.json();
         if (Array.isArray(dataTests)) {
-          tests = dataTests.map(apiTest => {
-            let createdStr = apiTest.createdAt ? new Date(apiTest.createdAt).toLocaleString('pt-BR') : '';
+          tests = dataTests.map(t => {
+            let createdStr = t.createdAt || t.created_at
+              ? new Date(t.createdAt || t.created_at).toLocaleString('pt-BR') : '';
             return {
-              id: 'TST-' + (apiTest.id || Math.floor(10000 + Math.random() * 90000)),
-              username: apiTest.username || 'teste',
-              password: apiTest.password || '1234',
-              plan: apiTest.plan?.name || 'Ultra 1 Krator+',
+              id: 'TST-' + (t.id || t._id || Math.floor(10000 + Math.random() * 90000)),
+              username: t.username || 'teste',
+              password: t.password || '1234',
+              plan: t.plan?.name || t.package_name || 'Ultra 1 Krator+',
               createdAt: createdStr || 'Hoje',
-              duration: apiTest.lastExtendPeriod ? apiTest.lastExtendPeriod + ' Horas' : '3 Horas',
-              status: apiTest.status === 1 ? 'Ativo' : 'Expirado',
-              whatsapp: apiTest.whatsapp || ''
+              duration: t.lastExtendPeriod ? t.lastExtendPeriod + ' Horas' : '3 Horas',
+              status: t.status === 1 || t.status === true || t.status === 'active' ? 'Ativo' : 'Expirado',
+              whatsapp: t.phone || t.whatsapp || ''
             };
           });
         }
@@ -111,14 +152,15 @@ document.addEventListener('DOMContentLoaded', () => {
       renderClientsTable();
       renderTestsTable();
       updateCountersAndBadges();
-      if (typeof checkAutomatedRenewals === 'function') checkAutomatedRenewals();
-      showToast('Dados 100% reais carregados da API WPlay!', 'success');
+      checkAutomatedRenewals();
+      showToast(`✅ ${clients.length} clientes e ${tests.length} testes carregados da WPlay!`, 'success');
     } catch (err) {
       console.error('[Sync Error]', err);
       renderClientsTable();
       renderTestsTable();
       updateCountersAndBadges();
-      if (typeof checkAutomatedRenewals === 'function') checkAutomatedRenewals();
+      checkAutomatedRenewals();
+      showToast('Erro ao sincronizar — usando dados locais.', 'error');
     }
   }
 

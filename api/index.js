@@ -105,14 +105,25 @@ module.exports = async (req, res) => {
   }
 
   // 3. Fetch Live Users List (is_trial = 0)
-  if (pathname.includes('/wplay/users') && req.method === 'GET') {
-    let result = await callWPlayApi('/lines?limit=200');
-    let items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+  if (pathname.includes('/wplay/users') && !pathname.match(/\/wplay\/users\/\d/) && req.method === 'GET') {
+    let result = await callWPlayApi('/lines?limit=500&is_trial=0');
+    if (!result.ok) result = await callWPlayApi('/lines?limit=200');
+    let items = result.data?.items || result.data?.data || result.data?.lines || (Array.isArray(result.data) ? result.data : []);
     return res.status(result.status || 200).json(items);
   }
 
+  // 3b. Fetch WPlay Account Credits / Balance
+  if (pathname.includes('/wplay/credits') && req.method === 'GET') {
+    let result = await callWPlayApi('/reseller/balance');
+    if (!result.ok) result = await callWPlayApi('/account/balance');
+    if (!result.ok) result = await callWPlayApi('/credits');
+    if (!result.ok) result = await callWPlayApi('/dashboard/stats');
+    const credits = result.data?.balance ?? result.data?.credits ?? result.data?.saldo ?? result.data?.creditos ?? null;
+    return res.status(200).json({ credits, raw: result.data, ok: result.ok });
+  }
+
   // 4. Create New Client / Line on WPlay Official API
-  if (pathname.includes('/wplay/users') && req.method === 'POST') {
+  if (pathname.includes('/wplay/users') && !pathname.match(/\/wplay\/users\/\d/) && req.method === 'POST') {
     let result = await callWPlayApi('/lines/v2', 'POST', body);
     if (!result.ok && result.status === 404) {
       result = await callWPlayApi('/linhas/v2', 'POST', body);
@@ -120,10 +131,27 @@ module.exports = async (req, res) => {
     return res.status(result.status || 200).json(result.data || { success: result.ok });
   }
 
+  // 4b. Update / Edit Client on WPlay Official API (PATCH)
+  if (pathname.match(/\/wplay\/users\/[^/]+$/) && req.method === 'PATCH' && !pathname.includes('/extend')) {
+    const id = pathname.split('/').pop();
+    // Try PUT first (most WPlay panels use PUT for full update)
+    let result = await callWPlayApi(`/lines/v2/${id}`, 'PUT', body);
+    if (!result.ok && (result.status === 404 || result.status === 405)) {
+      result = await callWPlayApi(`/lines/${id}`, 'PUT', body);
+    }
+    if (!result.ok && (result.status === 404 || result.status === 405)) {
+      result = await callWPlayApi(`/lines/v2/${id}`, 'PATCH', body);
+    }
+    return res.status(result.status || 200).json(result.data || { success: result.ok });
+  }
+
   // 5. Delete Client on WPlay Official API
-  if (pathname.includes('/wplay/users/') && req.method === 'DELETE') {
+  if (pathname.match(/\/wplay\/users\/[^/]+$/) && req.method === 'DELETE') {
     const id = pathname.split('/').pop();
     let result = await callWPlayApi(`/lines/v2/${id}`, 'DELETE');
+    if (!result.ok && result.status === 404) {
+      result = await callWPlayApi(`/lines/${id}`, 'DELETE');
+    }
     return res.status(result.status || 200).json(result.data || { success: true });
   }
 
