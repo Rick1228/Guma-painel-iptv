@@ -1,0 +1,65 @@
+.crm-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.crm-header-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.crm-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.crm-stat--success {
+  background: var(--success-subtle);
+  border-color: rgba(16,185,129,0.2);
+  color: var(--success);
+}
+
+.crm-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.crm-stage-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.crm-stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crm-stage-name {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.crm-stage-count {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}

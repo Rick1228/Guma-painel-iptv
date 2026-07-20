@@ -1,0 +1,105 @@
+.bs-compact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bs-compact-ring svg {
+  display: block;
+}
+
+.bs-compact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bs-compact-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.bs-compact-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.bs-full {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.bs-full-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-ring svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.bs-ring-value {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.bs-ring-number {
+  font-size: var(--text-xl);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.bs-ring-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.bs-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bs-criterion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.bs-criterion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bs-criterion-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.bs-criterion-value {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
